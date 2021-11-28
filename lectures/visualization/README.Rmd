@@ -1,0 +1,182 @@
+---
+output: 
+  md_document:
+    variant: markdown_github
+    toc: true
+---
+
+# Vizualizacija podatkov
+
+## Priprava podatkov
+
+Nalozimo podatke v tabelno strukturo
+```{R}
+md <- read.table(file="./lectures/visualization/movies.txt", sep=",", header=TRUE)
+```
+
+Prvotna struktura podatkov
+```{R}
+str(md)
+```
+
+Faktoriziramo (omejimo oz kategoriziramo zalogo vrednosti) za smiselne stolpce, npr. za tiste ki imajo lahko samo vrednosti TRUE/FALSE.
+```{R}
+for (i in 18:24)
+  md[,i] <- as.factor(md[,i])
+```
+
+Zdaj bo ukaz `str(md)` vrnil drugacno (faktorizirano) strukturo objekta, npr. stolpec "Action" ima namesto zaloge vrednosti "int", binarno zalogo vrednosti.
+```{R}
+str(md)
+```
+
+Poglejmo se statistiko podatkov
+```{R}
+summary(md)
+```
+
+### Vaja 1
+
+Ali ima vecina filmov vecji ali manjsi rating od povprecja ?
+
+Do odgovora lahko pridemo na vec nacinov:
+
+1. S spodnjim izrazom prestejemo koliko vrstic ima vecji rating od povprecja
+```{R}
+rating_greater_than_avg <- md$rating > mean(md$rating)
+# izpisimo razultat v obliki tabele
+table(rating_greater_than_avg)
+```
+2. Izrisemo histogram z vertikalnima premicama za srednjo in povprecno vrednost 
+```{R}
+hist(md$rating)
+abline(v=mean(md$rating), col="red") # mean=5.93285
+abline(v=median(md$rating), col="green") # median=6.1
+```
+3. Izrisemo skatlo z brki (boxplot)
+```{R}
+boxplot(md$rating)
+abline(h=median(md$rating), col="green")
+abline(h=7.0) # vrednost prvega kvartila
+abline(h=5.0) # vrednost drugega kvartila
+```
+
+#### Zakljucek
+Ker je mediana vecja od povprecja, potemi da je vec kot polovico filmov ocenjeno vec od povprecja.
+
+
+### Vaja 2
+
+Kaksen je delez komedij med vsemi filmi v nasi bazi ?
+
+Prestejemo pojavitev vrednosti z ukazom `table()`:
+```{R}
+delez <- table(md$Comedy)
+```
+
+Izrisemo zgornjo statistiko s pomocjo razlicnih diagramov:
+```{R}
+barplot(delez)
+pie(delez)
+```
+
+### Vaja 3
+
+Koliko filmov je mlajsih od leta `1960` ?
+
+```{R}
+pogoj <- md$year >= 1960 # pogoj ali selektor
+tab <- table(md$Comedy[pogoj], md$year[pogoj]) # v ukaz table() lahko podamo tudi vektorja istih dimenzij
+```
+
+Koliko filmov je bilo posnetih nekega specificnega leta:
+```{R}
+tab[,"2001"] # vseh film (0=ne komedij, 1=komedij)
+tab["1","2001"] # samo komedij
+```
+
+Prikaz relativne frekvence komedij glede na leta:
+```{R}
+allComedies <- table(md$year[pogoj])
+ratio <- tab[2,] / allComedies
+
+barplot(ratio, xlab="Leto", ylab="Relativna frekvenca", main="Relativna frekvenca komedij po letih")
+plot(x=names(ratio), y=as.vector(ratio), type="l", xlab="Leto", ylab="Relativna frekvenca komedij", main="Gibanje deleza komedij med filmi po letih")
+```
+
+
+### Vaja 4
+
+Ali so drame v povprecju res bolje ocenjene kot ostale zvrsti ?
+
+```{R}
+selDrama <- md$Drama == "1"
+
+dramaMean <- mean(md[selDrama, "rating"])
+dramaMean <- mean(md$rating[selDrama]) # ekvivalentno zgodnjemu zapisu
+
+neDramaMean <- mean(md$rating[!selDrama])
+```
+
+
+```{R}
+# izrisi boxplot za vrednosti "rating" glede na "Drama" (iz podatkov "md")
+boxplot(rating ~ Drama, data=md)
+```
+
+
+### Vaja 5
+
+Ali so romanticne komedije v povprecju bolj ocenjene kot akcijske komedije ?
+
+```{R}
+selRomCom <- md$Comedy == "1" & md$Romance == "1"
+selActCom <- md$Comedy == "1" & md$Action == "1"
+
+ratingRC <- md$rating[selRomCom]
+ratingAC <- md$rating[selActCom]
+
+mean(ratingRC)
+mean(ratingAC)
+```
+
+Poglejmo se boxplot:
+```{R}
+boxplot(ratingRC, ratingAC, names=c("Romanticne komedije", "Akcijske komedije"))
+```
+
+### Vaja 6
+
+Ali drzi, da pridobivajo filmi z vecjim proracunom tudi boljse ocene ?
+
+Ugotovimo da je veliko filmov brez podatka o proracunu (`NA's` stolpec):
+```{R}
+summary(md$budget)
+
+# ali je znan podatek ?
+table(is.na(md$budget))
+```
+
+V analizo bomo vzeli samo filme, ki imajo podatke o proracunu:
+```{R}
+sel <- is.na(md$budget)
+mdsub <- md[!sel,]
+plot(mdsub$budget, mdsub$rating)
+```
+
+Ker korelacijski vzorec iz grafa ni jasno viden, si lahko pomagamo z izracunom korelacije:
+```{R}
+cor(mdsub$budget, mdsub$rating) # korelacija med atributoma max=1, min=-1
+
+cor.test(mdsub$budget, mdsub$rating) # testiramo zanesljivost korelacije
+```
+
+#### Zakljucek
+
+Korelacija je `-0.01422`, kar pomeni da ne vidimo bistvene korelacije. Rating filmov se z vecjimi proracuni celo malenkostno zmanjsuje (zaradi negativnega odvoda).
+
+```{R}
+linearModel <- lm(formula = rating ~ budget, data = mdsub)
+plot(mdsub$budget, mdsub$rating)
+abline(linearModel, col="red")
+```
