@@ -10,3 +10,9 @@ Lecture summary is compiled in a `lectures/<lecture-name>/README.md` file, which
 
 1. Introduction to R
 2. [Data visualisation](./lectures/visualization/README.md)
+2. [Classification](./lectures/classification/README.md)
+
+## Tips and tricks
+
+- type `?command` to get help for "command"
+- [tilde operator](https://stackoverflow.com/questions/14976331/use-of-tilde-in-r-programming-language/14976479): `<response> ~ <explanatory variables>`

@@ -23,7 +23,7 @@ md <- read.table(file="movies.txt", sep=",", header=TRUE)
 # nekaj uporabnih funkcij
 head(md)
 summary(md)
-str(md)
+str(md) # display object structure
 names(md)
 
 # Faktoriziramo atribut "mpaa" (kategorije vsebine)
@@ -33,6 +33,7 @@ table(md$mpaa)
 # prazen string zamenjamo z oznako "UNK"
 md$mpaa[md$mpaa == ""] <- "UNK"
 
+# The function factor is used to encode a vector as a factor (the terms ‘category’ and ‘enumerated type’ are also used for factors).
 md$mpaa <- as.factor(md$mpaa)
 
 # Faktoriziramo tudi binarne atribute, ki opredeljujejo zvrst filma

@@ -1,0 +1,267 @@
+---
+output: 
+  md_document:
+    variant: markdown_github
+    toc: true
+---
+
+# Klasifikacija
+
+## Priprava podatkov
+
+Najprej nalozimo podatke iz `census.txt` s pomocjo `read.table()` ali `read.csv()`:
+```{R}
+# stringsAsFactors - faktorizira vse atribute tipa string
+census <- read.table("census.txt", header=T, sep=",", stringsAsFactors=T)
+# zgornji in spodnji izraz sta ekvivalentna
+census <- read.csv("census.txt", stringsAsFactors=T)
+
+summary(census)
+```
+
+Nato moramo celotno mnozico podatkov razdeliti na *ucno* in *testno* mnozico. V nasem primeru bomo 70% podatkov uporabili v ucni mnozici, ter 30% podatkov v testni:
+```{R}
+# nastavimo seed za generiranje nakljucnih stevil, da dosezemo ponovljive poskuse
+set.seed(0)
+
+# sample() vzame vzorec velikosti "size" iz elementov "x" (prvi argument)
+# z replace=F zagotovimo da se nakljucna stevila nebodo ponavljala
+sel <- sample(1:nrow(census), size=as.integer(nrow(census) * 0.7), replace=F)
+
+# zgradimo ucno in testno mnozico
+train <- census[sel,]
+test <- census[-sel,]
+
+nrow(train)
+nrow(test)
+```
+
+## Ucenje
+
+Brez kakrsnega koli ucenja bi do najboljse predikcije prisli z t.i. *vecinskim klasifikatorjem* (vse napovedi poda v vecinski razred). Ta klasifikator predstavlja spodnjo mejo za tocnost vseh drugih modelov.
+```{R}
+# v tem primeru je vecinski razred "Small"
+table(train$income)
+
+# klasifikacijska tocnost tega modela
+sum(test$income == "Small") / length(test$income)
+```
+
+### Odlocitveno drevo
+
+Pri gradnji odlocitvenega drevesa bomo uporablili knjiznico `rpart`, ki je ze vkljucena v R.
+
+Prvi argument funckcije `rpart` je formula, ki jo definiramo z uporabo [`~` operatorja](https://stackoverflow.com/questions/14976331/use-of-tilde-in-r-programming-language/14976479). Nekaj primerov formul:
+- `income ~ .`: napovej `income` z uporabo vseh atributov
+- `income ~ workclass`: napovej `income` z uporabo `workclass` atributa
+- `income ~ workclass + education`: napovej `income` z uporabo `workclass` in `education` atributov
+```{R}
+library(rpart)
+# namestimo zunanjo knjiznico
+#install.packages("rpart.plot")
+# nalozimo zunanjo knjiznico rpart.plot
+library(rpart.plot)
+
+# zgradimo drevo
+dt <- rpart(income ~ ., data=train)
+
+rpart.plot(dt)
+```
+
+Izvedemo predikcije, ter evaluiramo model z uporabo *tabele zmot* (confusion matrix) - primerjamo dejanske vrednosti iz testne mnozice (`observed`) z napovedanimi vrednosti (`predicted`):
+```{R}
+observed <- test$income
+predicted <- predict(dt, test, type="class")
+
+# primerjamo testne in napovedane vrednost z tabelom table
+# elementi ki niso na diagonali, so napake
+tab <- table(observed, predicted)
+
+# klasifikacijska tocnost (vec kot pri vecinskem klasifikatorju - 0.7547795)
+tocnost <- sum(diag(tab)) / sum(tab)
+```
+
+Za lazje delo, abstraktirajmo zgornjo logiko v funkcijo:
+```{R}
+# CA - classification accuracy
+CA <- function (observed, predicted)
+{
+  tab <- table(observed, predicted)
+  sum(diag(tab)) / sum(tab) # zadnji izraz v funkciji se samodejno vrne kot razultat
+}
+
+CA(observed, predicted)
+
+# se en mozni nacin za izracun CA
+# primerjamo istolezne elemente, dobimo logicni vektor
+q <- observed == predicted
+head(q)
+# izracunamo povprecje True vrednosti v vektorju
+mean(q)
+```
+
+Pri binarih klasifikacijskih modelih se uporabljajo se druge ocene kvalitete modele, ki so definirane samo za binarne klasifikatorje:
+```{R}
+Sensitivity <- function(obs, pred, pos.class)
+{
+	tab <- table(obs, pred)
+
+	tab[pos.class, pos.class] / sum(tab[pos.class,])
+}
+
+Specificity <- function(obs, pred, pos.class)
+{
+	tab <- table(obs, pred)
+	neg.class <- which(row.names(tab) != pos.class)
+
+	tab[neg.class, neg.class] / sum(tab[neg.class,])
+}
+
+Precision <- function(obs, pred, pos.class)
+{
+	tab <- table(obs, pred)
+
+	tab[pos.class, pos.class] / sum(tab[, pos.class])
+}
+
+table(observed, predicted)
+Sensitivity(observed, predicted, "Large")
+Specificity(observed, predicted, "Large")
+Precision(observed, predicted, "Large")
+```
+
+### Verjetnostne napovedi
+
+Za doloceno vozlisce drevesa zgornja stevilka pove verjetnost, da primer pripada dolocenemu razredu.
+
+Za korensko vozlisce, lahko povemo, da je iz vseh primerov, ki se propagirajo skozi to vozlisce (katerih je 100%), verjetno 75%, da dolocen primer pripada razredu "Small".
+
+Za skrajno levi list drevesa lahko povemo, da je verjetnost da primer pripada razredu "Small" 26% (verjetno da pripada razredu "Large" pa 74%).
+```{R}
+rpart.plot(dt)
+```
+
+#### Brier score
+```{R}
+# namesto dejanskih predikcij nas zdaj zanimajo verjetnosti danih predikcij
+# zato podamo argument type="prob"
+# dobimo matriko verjetnosti (vsak stolpec je razred, vsaka vrstica je testni primer)
+predictedMat <- predict(dt, test, type="prob")
+head(predictedMat)
+
+library(nnet)
+
+# uporabimo nnet knjiznico kjer najdemo funkcijo class.ind()
+# funkcija vrne tocne napovedi (dejanske razrede katerim pripadajo primeri)
+observedMat <- class.ind(test$income)
+head(observedMat)
+
+brier.score <- function(obsMat, predMat)
+{
+	sum((obsMat - predMat) ^ 2) / nrow(predMat)
+}
+
+# kvadrat razdalje med predikcijo in dejansko vrednostjo (max=2, min=0)
+brier.score(observedMat, predictedMat)
+```
+
+Potrebujemo nekaksen trivialni model, katerega bomo lahko primerjali z nasimi naucenimi modeli. Trivialni model bo napovedoval glede na [apriorno verjetnost](https://en.wikipedia.org/wiki/A_priori_probability) razredov. Nas model pa vraca [aposteriorno napoved](https://encyclopediaofmath.org/wiki/A_posteriori_probability).
+
+> A posteriori probability is a conditional probability of an event taking place under certain conditions, to be contrasted with its unconditional or a priori probability
+
+```{R}
+# apriorna porazdelitev po razredih
+p0 <- table(train$income) / nrow(train)
+
+p0Mat <- matrix(rep(p0, times=nrow(test)), nrow = nrow(test), byrow=T)
+colnames(p0Mat) <- names(p0)
+head(p0Mat)
+
+# primerjamo brier score nasega modela in trivialnega klasifikatorja
+
+# apriorna napoved (vnaprej napovedljiva brez vrednosti atributov)
+brier.score(observedMat, p0Mat)
+# aposteriorna napoved (napovedljiva z vrednostjo atributov)
+brier.score(observedMat, predictedMat)
+```
+
+#### Information score
+
+Ta mera nam pove pridobljeno kolicino informacije (min=0, max=entripija razreda). 
+Trivialni model ima pridobljeno informacijsko vrednost enako 0, saj vedno napove glede na apriorne verjetnosti.
+```{R}
+inf.score <- function(trainClass, testClass, predMat)
+{
+	result <- 0
+
+	priors <- table(trainClass) / length(trainClass)
+
+	for (i in 1:nrow(predMat))
+	{
+		p.prior <- priors[[testClass[i]]]
+		p.posterior <- predMat[i, testClass[i]]
+
+		if (p.posterior >= p.prior)
+		  # vem vec kot prej, pristejemo kolicino informacije
+			result <- result - log2(p.prior) + log2(p.posterior)
+		else
+		  # vem manj, odstejemo
+			result <- result + log2(1-p.prior) - log2(1-p.posterior)				
+	}
+
+	result / nrow(predMat)
+}
+
+inf.score(train$income, test$income, p0Mat) # trivialni model
+inf.score(train$income, test$income, predictedMat)
+```
+
+#### Krivulja ROC
+
+ROC krivulja idealnega modela bi vsebovala tudi tocko `(1,1)` (Specificnost=1, Senzitivnost=1). Ta model pravilno klasificira vse primere iz pozitivnega in negativnega razreda.
+
+Blizje kot smo tocki `(1,1)`, boljsi je nas model.
+
+Tehnicno bi bil pri binarni klasifikaciji najslabsi tisti model, ki bi dosegel tocko `(0,0)`, 
+ampak hkrati bi to pomenilo, da lahko vse odgovore tega modela samo invertiramo, ter s tem dobimo dober model.
+Zato je najslabsi model tisti, ki se pribliza premici `x=y`, saj ga nemoremo zlahka izboljsati.
+
+AUC (Area Under Curve) predstavlja verjetnost, da bo klasifikator nakljucno izbranemu pozitivnemu primeru dodelil visjo oceno (pripadnost pozitivnemu razredu) kot nakljucno izbranemu negativnemu primeru.
+
+```{R}
+# napovedane verjetnosti za pozitiven razred uredimo narascajoce in odstranimo ponovitve
+p <- unique(sort(predictedMat[,"Large"]))
+p
+
+# pragove dolocimo kot vmesne vrednosti med elementi vektorja p 
+threshVec <- p[-length(p)] + diff(p)/2
+threshVec
+ 
+# dodamo se -Inf in Inf, ter pragove uredimo padajoce
+threshVec <- c(-Inf, threshVec, Inf)
+threshVec <- sort(threshVec, decreasing=T)
+threshVec
+
+sensVec <- vector()
+specVec <- vector()
+for (th in threshVec)
+{
+	predicted <- ifelse(predictedMat[,"Large"] > th, "Large", "Small")
+	predicted <- factor(predicted, levels=c("Large", "Small"))
+
+	sensVec <- append(sensVec, Sensitivity(observed, predicted, "Large"))
+	specVec <- append(specVec, Specificity(observed, predicted, "Large"))
+}
+
+sensVec
+specVec
+
+plot(x=1-specVec, y=sensVec, type="l", xlab="1-Specificity", ylab="Sensitivity", main="ROC curve")
+abline(a=0, b=1, col="grey")
+
+# Ploscina pod krivuljo ROC
+dX <- c(diff(1-specVec), 0)
+dY <- c(diff(sensVec), 0)
+AUC <- sum(sensVec * dX) + sum(dY * dX)/2
+AUC
+```
