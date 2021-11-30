@@ -1,0 +1,120 @@
+---
+output: 
+  md_document:
+    variant: markdown_github
+    toc: true
+---
+
+# Ocenjevanje ucenja
+
+Nalozimo podatke ki jih bomo uporabili za demonstracijo.
+```{R}
+data <- read.table("insurance.txt", sep=",", header=T, stringsAsFactors=T)
+```
+
+### Ocenjevanje z neodvisno testno mnozico
+
+Pri tem nacinu locimo celotno podatkovno mnozico na dve neodvisni mnozici: ucno in testno.
+Za ucenje modela uporabimo samo ucno mnozico, ter za testiranje samo testno.
+
+```{R}
+nrow(data)
+
+set.seed(0)
+sel <- sample(1:nrow(data), as.integer(nrow(data) * 0.7), replace=F)
+train <- data[sel,]
+test <- data[-sel,]
+
+library(rpart)
+library(rpart.plot)
+
+dt <- rpart(insurance ~ ., train)
+rpart.plot(dt)
+
+observed <- test$insurance
+predicted <- predict(dt, test, type="class")
+
+q <- observed == predicted
+sum(q)/length(q)
+```
+
+Problem tega pristopa je, da je lahko razultat bistveno drugacen v odvisnosti od razbitja podatkov na ucno in testno mnozico.
+
+```{R}
+set.seed(100)
+sel <- sample(1:nrow(data), as.integer(nrow(data) * 0.7), replace=F)
+train <- data[sel,]
+test <- data[-sel,]
+dt <- rpart(insurance ~ ., train)
+observed <- test$insurance
+predicted <- predict(dt, test, type="class")
+q <- observed == predicted
+sum(q)/length(q)
+```
+
+### K-kratko precno preverjanje
+
+Razbijemo podatkovno mnozico na `k` blokov, ter v vsaki ucni iteraciji uporabimo drugo kombinacijo blokov za ucno in testno mnozico. S tem bo vsak primer oziroma blok enkrat imel vlogo ucne in vlogo testne mnozice.
+
+Dodatna razlaga: https://www.youtube.com/watch?v=fSytzGwwBVw
+
+```{R}
+# stevilo vseh primerov v podatkovni mnozici
+n <- nrow(data)
+
+# parameter postopka
+k <- 10
+
+# nastavimmo seed za ponavljive poskuse 
+set.seed(0)
+
+# primere nakljucno razbijemo v k priblizno enako mocnih podmnozic
+fold.id <- rep(1:k, length.out=n)
+fold.id
+
+s <- sample(1:n, n, FALSE) # permutiraj mnozico brez ponavljanja
+s
+
+fold.id <- fold.id[s]
+fold.id
+
+cv.dt <- vector()
+for (i in 1:k)
+{	
+	print(paste("Iteracija", i))
+	flush.console()
+
+	sel <- fold.id == i
+
+	dt <- rpart(insurance ~ ., data[!sel,])
+	predicted <- predict(dt, data[sel,], type= "class")
+	observed <- data[sel,]$insurance
+	q <- observed == predicted
+	cv.dt[i] <- sum(q)/length(q)
+}
+
+cv.dt
+mean(cv.dt) # koncna tocnost je povprecje vseh tocnosti
+sd(cv.dt) / sqrt(length(cv.dt)) # standardna napaka
+```
+
+V ekstremnem primeru, je lahko vsak ucni primer svoj blok `k=nrow(data)`.
+Temu principu recemo izpusti enega (*Leave One Out Cross Validation*).
+```{R}
+predicted <- factor(levels=levels(data$insurance))
+
+k <- nrow(data)
+
+for (i in 1:k)
+{	
+	# print(paste("Izlocen primer na indeksu", i))
+	# flush.console()
+
+	dt <- rpart(insurance ~ ., data[-i,])
+	predicted[i] <- predict(dt, data[i,], type="class")
+}
+
+q <- data$insurance == predicted
+mean(q) # koncna tocnost je povprecje vseh tocnosti
+sd(q) / sqrt(length(q)) # standardna napaka
+```

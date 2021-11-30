@@ -10,7 +10,8 @@ Lecture summary is compiled in a `lectures/<lecture-name>/README.md` file, which
 
 1. Introduction to R
 2. [Data visualisation](./lectures/visualization/README.md)
-2. [Classification](./lectures/classification/README.md)
+3. [Classification](./lectures/classification/README.md)
+4. [Model evalulation](./lectures/evaluation/README.md)
 
 ## Tips and tricks
 
