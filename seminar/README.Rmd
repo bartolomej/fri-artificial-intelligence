@@ -1,0 +1,95 @@
+---
+output: 
+  md_document:
+    variant: markdown_github
+    toc: true
+---
+
+# Seminarska naloga
+
+Cilj seminarske naloge je uporabiti metode strojnega učenja za gradnjo modelov za napovedovanje
+porabe električne energije (regresijski problem) in namembnosti stavbe (klasifikacijski problem),
+ustrezno ovrednotiti modele in jasno predstaviti dobljene rezultate.
+
+## Vizualizacija podatkov
+
+### Uvoz podatkov
+
+Najprej uvozimo in na kratko preglejmo podatke. 
+
+Opazimo, da imamo 3 atribute tipa "character": `datum`, `regija` in `namembnost`. Atributa `regija` in `namembnost` (z indeksi `2` in `4`) imata le majhno stevilo vrednosti, zato jih bomo faktorizirali. Datum bomo pa kasneje preuredili v bolj smiselno obliko.
+```{R}
+stavbe <- read.table("trainset.txt", header=T, sep=",")
+summary(stavbe)
+
+for (i in list(2,4))
+  stavbe[,i] <- as.factor(stavbe[,i])
+
+summary(stavbe)
+```
+
+### Izris grafov
+
+Najprej vizualizirajmo porazdelitvene vrednosti posameznih atributov, da dobimo boljsi vpogled v vsak atribut posebej.
+```{R}
+pie(table(stavbe$regija), xlab="Regija")
+hist(stavbe$stavba, xlab="Oznaka stavbe", main="Histogram oznak stavb")
+pie(table(stavbe$namembnost), xlab="Namembnost")
+hist(stavbe$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
+hist(stavbe$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
+hist(stavbe$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
+hist(stavbe$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
+hist(stavbe$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
+hist(stavbe$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
+hist(stavbe$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
+hist(stavbe$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
+hist(stavbe$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
+hist(stavbe$smer_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+```
+
+Pri nadalnji predikciji nam bo koristilo tudi nekaj intuicije o soodvisnosti med doloceni atributi. 
+
+Ze samo po sebi je logicno, da bodo nekateri atributi (npr. povrsina stavbe <-> poraba energije) v vecji medsebojni odvisnosti, kot nekateri drugi atributi (npr. smer vetra <-> poraba energije);
+
+Naso hipotezo lahko dodatno potrdimo z nekaj grafi, kjer prikazemo korelacijo med izbranimi pari atributov.
+
+Zdaj izrisimo nekaj korelacijskih grafov, da potrimo ali pa ovrzemo nase hipoteze. Da bo trend se bolje viden, lahko na graf izrisemo se linearno regresijsko premico.
+
+Pri porabi elektricne energije v odvisnosti z povrsino stavbe vidimo, da obstaja jasen trend.
+```{R}
+x <- stavbe$povrsina
+y <- stavbe$poraba
+plot(x, y, col="lightblue")
+abline(lm(y ~ x), col = "red", lwd = 3)
+```
+
+Medtem ko pri grafu porabe energije v odvisnosti od smeri vetra jasne korelacije ni.
+```{R}
+x <- stavbe$smer_vetra
+y <- stavbe$poraba
+plot(x, y, col="lightblue")
+abline(lm(y ~ x), col = "red", lwd = 3)
+```
+
+Najboljse bi bilo primerjati vse atribute z vsemi drugimi atributi, ter prikazati medsebojne odvisnosti, tako bi pridobili visoko nivojski pogled na odvisnosti med atributi.
+
+Za to vrstno vizualizacijo bomo uporabili dve zunanji knjiznici `ggplot2` in `ggcorrplot`, ki jih moramo prenesti in namestiti.
+
+Ta graf nam izpise korelacijsko matriko, iz katere lahko razberemo korelacije med vsemi numericni atributi. Opazimo, da sta v najvecji medsebojni korelaciji res atributa `poraba` in `povrsina`.
+```{R}
+library(ggplot2)
+library(ggcorrplot)
+
+data(stavbe, package="mosaicData")
+
+# izberemo samo numericne atribute
+df <- dplyr::select_if(stavbe, is.numeric)
+
+# izracunamo korelacije z metodo cor
+r <- cor(df, use="complete.obs")
+round(r,2)
+
+ggcorrplot(r,
+           hc.order=T, # uredi po korelaciji
+           type="lower") # prikazi samo v spodnjem trikotniku
+```
