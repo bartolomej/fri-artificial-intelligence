@@ -207,7 +207,7 @@ predicted <- predict(modelFull, test, type="class")
 mean(test$insurance == predicted)
 
 
-source("wrapper.R")
+source("../wrapper.R")
 
 #
 # Funkcija wrapper potrebuje:

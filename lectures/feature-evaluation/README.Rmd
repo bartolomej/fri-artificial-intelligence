@@ -158,7 +158,7 @@ mean(test$insurance == predictedReduced)
 Preveri vse potencne mnozice atributov, ter najde najde mnozico atributov, ki minimizira napako.
 ```{R}
 library(rpart)
-source("wrapper.R")
+source("../wrapper.R")
 
 modelFull <- rpart(insurance ~ ., train)
 predicted <- predict(modelFull, test, type="class")

@@ -191,7 +191,7 @@ CA(test$Class, predicted)
 
 ## Boosting
 
-Opis boostinga iz wikipedije [wikipedije](https://en.wikipedia.org/wiki/Boosting_(machine_learning):
+Opis boostinga iz wikipedije [wikipedije](https://en.wikipedia.org/wiki/Boosting_(machine_learning)):
 > Boosting is based on the question posed by Kearns and Valiant "Can a set of weak learners create a single strong learner?" A weak learner is defined to be a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing). In contrast, a strong learner is a classifier that is arbitrarily well-correlated with the true classification.
 
 Osnova postopka je utezitev posameznega ucnega primera (utez oznacuje tezavnost primera). Na zacetku imajo vsi ucni primeri enako utez. Vsak naslednji model se uci na tezjih primerih.
