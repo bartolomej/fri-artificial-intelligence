@@ -1,0 +1,198 @@
+---
+output: 
+  md_document:
+    variant: markdown_github
+    toc: true
+---
+# Feature evaluation
+
+## Priprava podatkov
+
+Faktorizirati je potrebno vse atribute (tudi non-character atribut kot je `legs`).
+```{R}
+library(CORElearn)
+zoo <- read.table(file="zoo.txt", sep=",", header=T)
+
+summary(zoo)
+
+for (i in 1:ncol(zoo))
+  zoo[,i] <- as.factor(zoo[,i])
+
+summary(zoo)
+```
+## Pregled ocen
+
+Evaluiramo atribute, glede na vrednost [informacijskega prispevka](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees).
+```{R}
+sort(attrEval(type ~ ., zoo, "InfGain"), decreasing=T)
+```
+
+Kaze, da ima atribut `legs` najvecji informacijski prispevek. Ampak to ne nujno zares drzi, saj ima atribut legs tudi najvec razlicnih vrednosti. Da preverimo ali je temu res tako, lahko dodamo dodaten atribute `id`, ki ima maksimalno stevilo razlicnih vrednosti (enako stevilu primerov).
+
+```{R}
+id <- 1:nrow(zoo)
+zoo$id <- as.factor(id)
+sort(attrEval(type ~ ., zoo, "InfGain"), decreasing=T)
+```
+
+Vidimo da ima informacijska vrednost atributa `id` maskimalno vrednost - enako entropiji razredov.
+```{R}
+# apriorne verjetnosti razredov
+p0 <- table(zoo$type) / length(zoo$type)
+
+# entropija razreda (potrebno stevilo bitov za dolocitev razreda primera)
+-sum(p0 * log2(p0))
+```
+
+Ce zdaj zgradimo odlocitveno drevo z ten, bo algoritem preferiral atribut `id`, saj maksimizira informacijski prispevek. 
+Tak model je popolnoma prilagojen na podatke in ni zmozen generalizacije.
+
+Model si ucne primere samo zapomni, ne pridobi pa nobenega znanja, s katerim bil lahko izvajal predikcije o ne videnih primerih.
+```{R}
+dt <- CoreModel(type ~ ., zoo, model="tree", selectionEstimator="InfGain")
+plot(dt, zoo)
+```
+
+Isto slabo lastnost ima tudi ocena *gini*:    
+```{R}
+sort(attrEval(type ~ ., zoo, "Gini"), decreasing=T)
+```
+
+Z oceno *Gain Ratio* pa poskusamo problem precenjevanja vec vrednostnih atributov resiti tako,
+da vrednost informacijskega prispevka nekega atributa deli z entropijo nekega atributa.
+
+Ce ima atribut veliko razlicnih vrednosti, je njegova entropija tudi visoka.
+
+Sicer ima tudi ta ocena eno slabo lastnost, in sicer precenjevanje konstantnih atributov (ki imajo entropijo=0 - `infoPrispevek / 0`).
+```{R}
+sort(attrEval(type ~ ., zoo, "GainRatio"), decreasing=T)
+```
+
+Poznamo pa tudi druge mere, ki resijo zgornje probleme. Se najbolje se obnese ocena *MDL*.
+```{R}
+sort(attrEval(type ~ ., zoo, "ReliefFequalK"), decreasing=T)
+sort(attrEval(type ~ ., zoo, "MDL"), decreasing=T)
+```
+
+Se ena moznost, da resimo precenjevanje atributov pri oceni *informacijskega prispevka* in *gini*, je da atribute biniraliziramo:
+```{R}
+sort(attrEval(type ~ ., zoo, "GainRatio", binaryEvaluation=T), decreasing=T)
+sort(attrEval(type ~ ., zoo, "Gini", binaryEvaluation=T), decreasing=T)
+```
+
+## Kratkovidnost ocen
+
+Pri spodnjem primeru vidimo, da ni nobene korelacije oz. interakcije med atributi, razen med atributoma `a1` in `a2`, ki pa nista linearno locljiva.
+
+```{R}
+quadrant <- read.table("quadrant.txt", sep=",", header=T)
+summary(quadrant)
+quadrant$Class <- as.factor(quadrant$Class)
+plot(quadrant, col=quadrant$Class)
+plot(quadrant$a1, quadrant$a2, col=quadrant$Class)
+```
+
+Pri takih primerih so problematicne tiste ocene (npr. informacijski prispevek) ki vsak atribut ocenjujejo zase. Tem ocenam recemo *kratkovidne ocene*, saj ne zaznajo interakcije med atributi.
+```{R}
+# najbolje je ocenjen a4, ki pa nima nobenega vpliva
+sort(attrEval(Class ~ ., quadrant, "InfGain"), decreasing=T)
+sort(attrEval(Class ~ ., quadrant, "GainRatio"), decreasing=T)
+sort(attrEval(Class ~ ., quadrant, "Gini"), decreasing=T)
+sort(attrEval(Class ~ ., quadrant, "MDL"), decreasing=T)
+```
+
+
+Posledica te slabe ocene, je da ne zgradimo zelo slab model:
+```{R}
+dt <- CoreModel(Class ~ ., quadrant, model="tree", selectionEstimator="InfGain")
+plot(dt, zoo)
+```
+
+Primer ocen, ki upostevajo ocene drugih atributov, ter posledicno znajo zaznati interakcije med atributi.
+```{R}
+sort(attrEval(Class ~ ., quadrant, "Relief"), decreasing=T)
+sort(attrEval(Class ~ ., quadrant, "ReliefFequalK"), decreasing=T)
+sort(attrEval(Class ~ ., quadrant, "ReliefFexpRank"), decreasing=T)
+```
+
+Zato je tudi samo odlocitveno drevo primerno zgrajeno.
+```{R}
+dt <- CoreModel(Class ~ ., quadrant, model="tree", selectionEstimator="Relief")
+plot(dt, zoo)
+```
+
+## Reduciran model
+
+```{R}
+ins <- read.table("insurance.txt", sep=",", header=T, stringsAsFactors=T)
+summary(ins)
+
+sel <- sample(1:nrow(ins), round(nrow(ins) * 0.7), replace=T)
+train <- ins[sel,]
+test <- ins[-sel,]
+
+table(train$insurance)
+```
+
+V spodnjem primeru smo prvotni model, ki je vposteval vse atribute, reducirali tako, da smo vzeli samo najboljsih `n` atributov. Vidimo da je reduciran model boljsi od prvotnega.
+```{R}
+library(kernlab)
+
+modelFull <- ksvm(insurance ~ ., train)
+predictedFull <- predict(modelFull, test, type="response")
+
+set.seed(0)
+sort(attrEval(insurance ~ ., train, "ReliefFequalK"), decreasing=T)
+
+# reduciramo model, ter upostevamo samo boljse atribute
+modelReduced <- ksvm(insurance ~ num.of.doors + height + body.style + length, train)
+predictedReduced <- predict(modelReduced, test, type="response")
+
+# dobimo boljse razultate iz reduciranega modela
+mean(test$insurance == predictedFull)
+mean(test$insurance == predictedReduced)
+```
+
+## Metoda ovojnice
+
+Preveri vse potencne mnozice atributov, ter najde najde mnozico atributov, ki minimizira napako.
+```{R}
+library(rpart)
+source("wrapper.R")
+
+modelFull <- rpart(insurance ~ ., train)
+predicted <- predict(modelFull, test, type="class")
+mean(test$insurance == predicted)
+
+myTrainFunc <- function(formula, traindata)
+{
+	rpart(formula, traindata)	
+}
+
+# Funkcija za pridobivanje napovedi modela (razredi)
+myPredictFunc <- function(model, testdata)
+{
+	predict(model, testdata, type="class")
+}
+
+# Atribute lahko izberemo glede na klasifikacijsko tocnost modela
+myEvalFunc <- function(predicted, observed, trained)
+{
+	# vracamo napako modela, saj wrapper minimizira vrednost ocene
+	1.0 - mean(observed == predicted)	
+}
+
+set.seed(0)
+wrapper(insurance ~ ., train, myTrainFunc, myPredictFunc, myEvalFunc, cvfolds=10)
+
+# testirajmo na neodvisni testni mnozici
+modelWrap <- rpart(insurance ~ num.of.doors + height + fuel.type + peak.rpm + aspiration + length, train)
+predicted <- predict(modelWrap, test, type="class")
+mean(test$insurance == predicted)
+
+```
+```{R}
+modelWrap <- rpart(insurance ~ height + width + body.style + drive.wheels, train)
+predicted <- predict(modelWrap, test, type="class")
+mean(test$insurance == predicted)
+```

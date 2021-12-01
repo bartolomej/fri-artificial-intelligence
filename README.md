@@ -13,6 +13,7 @@ Lecture summary is compiled in a `lectures/<lecture-name>/README.md` file, which
 3. [Classification](./lectures/classification/README.md)
 4. [Model evalulation](./lectures/evaluation/README.md)
 5. [Classification methods](./lectures/classification-methods/README.md)
+6. [Feature evaluation](./lectures/feature-evaluation/README.md)
 
 ## Tips and tricks
 

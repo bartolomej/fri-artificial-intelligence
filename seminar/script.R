@@ -53,3 +53,15 @@ library(ggcorrplot)
 ggcorrplot(r,
            hc.order=T, # uredi po korelaciji
            type="lower") # prikazi samo v spodnjem trikotniku
+
+
+# generiramo ucno in testno mnozico
+
+sel <- sample(1:nrow(stavbe), as.integer(nrow(stavbe) * 0.7), replace=F)
+train <- stavbe[sel,]
+test <- stavbe[-sel,]
+
+library(rpart)
+dt <- rpart(namembnost ~ ., data=train) # zgradimo odlocitveno drevo (decision tree)
+rpart.plot(dt)
+
