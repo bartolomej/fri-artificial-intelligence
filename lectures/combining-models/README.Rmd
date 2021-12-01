@@ -1,0 +1,287 @@
+---
+output: 
+  md_document:
+    variant: markdown_github
+    toc: true
+---
+
+# Combining classification models
+
+## Uvod podatkov
+```{R}
+vehicle <- read.table("vehicle.txt", sep=",", header = T, stringsAsFactors = T)
+summary(vehicle)
+
+set.seed(0)
+
+sel <- sample(1:nrow(vehicle), size=as.integer(nrow(vehicle)*0.7), replace=F)
+train <- vehicle[sel,]
+test <- vehicle[-sel,]
+
+
+table(train$Class)
+table(test$Class)
+
+
+library(CORElearn)
+
+# definirajmo pomocno funkcijo za Classification Accuracy
+CA <- function(observed, predicted)
+{
+	mean(observed == predicted)
+}
+```
+
+Ustvarimo tri razlicne modele, vsak ima malo drugacno klasifikacijsko tocnost.
+```{R}
+modelDT <- CoreModel(Class ~ ., train, model="tree")
+modelNB <- CoreModel(Class ~ ., train, model="bayes")
+modelKNN <- CoreModel(Class ~ ., train, model="knn", kInNN = 5)
+
+predDT <- predict(modelDT, test, type = "class")
+caDT <- CA(test$Class, predDT)
+caDT
+
+predNB <- predict(modelNB, test, type="class")
+caNB <- CA(test$Class, predNB)
+caNB
+
+predKNN <- predict(modelKNN, test, type="class")
+caKNN <- CA(test$Class, predKNN)
+caKNN
+
+pred <- data.frame(predDT, predNB, predKNN)
+head(pred)
+```
+
+
+## Glasovanje
+
+Napoved lahko poskusimo izboljsati, z vpeljavo *glasovanja*.
+```{R}
+voting <- function(predictions)
+{
+	res <- vector()
+
+  	for (i in 1 : nrow(predictions))  	
+	  {
+	  	vec <- unlist(predictions[i,]) # pretvorimo vrstico v vektor
+    	res[i] <- names(which.max(table(vec))) # poiscemo napoved z najvec glasovi
+  	}
+
+  	res
+}
+
+predicted <- factor(voting(pred), levels=levels(train$Class))
+CA(test$Class, predicted)
+```
+
+
+## Utezeno glasovanje
+
+Glasovanje s pomocjo verjetnostni napovedi - t.i. *utezeno glasovanje*.
+```{R}
+predDT.prob <- predict(modelDT, test, type="prob")
+head(predDT.prob)
+
+predDT.prob <- predict(modelDT, test, type="prob")
+predNB.prob <- predict(modelNB, test, type="prob")
+predKNN.prob <- predict(modelKNN, test, type="prob")
+
+# sestejemo napovedane verjetnosti s strani razlicnih modelov
+predProb <- predDT.prob + predNB.prob + predKNN.prob
+
+head(predProb)
+
+head(max.col(predProb))
+
+# izberemo razred z najvecjo verjetnostjo
+predClass <- colnames(predProb)[max.col(predProb)]
+predicted <- factor(predClass, levels(vehicle$Class))
+head(predicted)
+
+CA(test$Class, predicted)
+```
+
+Pri utezenem glasovanju lahko upostevamo tudi tocnost modelov - obtezimo glasove z indikatorjem tocnosti modela. Tako imajo kvalitetnejsi modeli vecji glas.
+```{R}
+library(ipred)
+
+mymodel <- function(formula, data, target.model){CoreModel(formula, data, model=target.model)}
+mypredict <- function(object, newdata) {pred <- predict(object, newdata, type="class"); destroyModels(object); pred}
+
+res <- errorest(Class ~ ., train, model=mymodel, predict=mypredict, target.model="tree")
+caDT.cv <- 1 - res$error # klasifikacijska tocnost (1 - napaka)
+caDT.cv
+
+res <- errorest(Class ~ ., train, model=mymodel, predict=mypredict, target.model="bayes")
+caNB.cv <- 1 - res$error
+caNB.cv
+
+mymodelKNN <- function(formula, data, valK){CoreModel(formula, data, model="knn", kInNN=valK)}
+res <- errorest(Class ~ ., train, model=mymodelKNN, predict=mypredict, valK=5)
+caKNN.cv <- 1 - res$error
+caKNN.cv
+
+# sedaj pri sestevanju napovedane verjetnosti utezimo s pricakovano tocnostjo modela
+predProb <- caDT.cv * predDT.prob + caNB.cv * predNB.prob + caKNN.cv * predKNN.prob
+
+predClass <- colnames(predProb)[max.col(predProb)]
+predicted <- factor(predClass, levels(vehicle$Class))
+
+CA(test$Class, predicted)
+
+```
+
+
+## Bagging
+
+Bagging (*Bootstrap Aggregating*) - zdruzujemo napovedi razlicnih dreves/modelov. Vzorcimo iz ucne mnozice (z vracanjem). Izberemo priblizno 2/3 primerov. Na podlagi izbranih primerov zgradimo odlocitveno drevo, dobimo en model, ter ta postopek dobimo velikokrat.
+
+Na koncu za vsak testni primer izvedemo navadno glasovanje na pridobljeni mnozici modelov.
+
+> Pri tem postopku, je priporocljivo da zgradimo overfittana drevesa (parameter `minNodeWeightTree=1`), saj se izkaze dalahko pridemo do dobre napovedi, ce zdruzimo napovedi iz mnozice takih dreves.
+
+```{R}
+n <- nrow(train)
+m <- 30 # koliko razlicnih modelov zgradimo
+
+models <- list()
+for (i in 1:m)
+{
+	# nakljucno izberemo n primerov z vracanjem (elementi se lahko ponavljajo)
+	sel <- sample(1:n, n, replace = T)
+	bootstrap <- train[sel,]
+	# minNodeWeightTree = najmanjse stevilo primerov na dolocen list drevesa
+	models[[i]] <- CoreModel(Class ~ ., bootstrap, model="tree", minNodeWeightTree=1)
+}
+
+pred <- NULL
+for (i in 1:m)
+	pred <- cbind(pred, as.character(predict(models[[i]], test, type="class")))
+
+head(pred)
+
+predClass <- voting(pred)
+predicted <- factor(predClass, levels=levels(train$Class))
+CA(test$Class, predicted)
+```
+
+Imamo tudi ze implementiramo knjiznico za izvedbo bagginga.
+```{R}
+library(ipred)
+
+bag <- bagging(Class ~ ., train, nbagg=30)
+predicted <- predict(bag, test, type="class")
+CA(test$Class, predicted)
+```
+
+Poskusimo se z metodo nakljucnega gozda (podobna baggingu).
+
+> Random forests or random decision forests are an ensemble learning (use multiple learning algorithms) method for classification, regression and other tasks that operates by constructing a multitude of decision trees at training time. For classification tasks, the output of the random forest is the class selected by most trees.
+
+```{R}
+library(randomForest)
+
+rf <- randomForest(Class ~ ., train)
+predicted <- predict(rf, test, type = "class")
+CA(test$Class, predicted)
+```
+
+
+## Boosting
+
+Opis boostinga iz wikipedije [wikipedije](https://en.wikipedia.org/wiki/Boosting_(machine_learning):
+> Boosting is based on the question posed by Kearns and Valiant "Can a set of weak learners create a single strong learner?" A weak learner is defined to be a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing). In contrast, a strong learner is a classifier that is arbitrarily well-correlated with the true classification.
+
+Osnova postopka je utezitev posameznega ucnega primera (utez oznacuje tezavnost primera). Na zacetku imajo vsi ucni primeri enako utez. Vsak naslednji model se uci na tezjih primerih.
+```{R}
+models <- list()
+
+n <- nrow(train)
+
+# na zacetku imajo vsi primeri enako utez
+w <- rep(1/n, n)
+
+# stevilo vseh modelov
+m <- 100
+
+i <- 1
+while (i <= m)
+{
+	# nakljucno izberemo primere glede na utezi (elementi se lahko ponavljajo)
+  # verjetnost da izberem primer (prob) je sorazmerna z njegovo tezavnostjo/utezjo
+	sel <- sample(1:n, n, prob=w, replace=T)
+
+	# zgradimo model na podlagi izbranih primerov
+	hyp <- CoreModel(Class ~ ., train[sel,], model="tree")
+
+	# uporabimo model za klasifikacijo vseh primerov v ucni mnozici
+	pred <- predict(hyp, train, type="class")
+
+	# kateri primeri so pravilno klasificirani
+	correct <- pred == train$Class
+	
+	# napaka modela je vsota utezi napacno klasificiranih primerov
+	err <- sum(w[!correct])
+
+	# ce je napaka prevelika, ponovi iteracijo
+	if (err > 0.5)
+		next
+
+	beta <- err/(1-err)
+	
+	# shranimo model in njegovo utez pri glasovanju (vecjo utez dobijo modeli z nizjo napako)
+	models[[i]] <- list(model=hyp, quality=log(1/beta))
+
+	# znizamo utez pravilno klasificiranim primerom
+	w[correct] <- w[correct] * beta
+	
+	# normaliziramo utezi, da dobimo verj. porazdelitev
+	w <- w / sum(w)
+
+	print(paste("Zakljucil korak", i, "izmed", m))
+	flush.console()
+
+	# gremo na naslednji model
+	i <- i + 1 
+}
+
+# izpisimo utez pri glasovanju posameznih modelov 
+for (i in 1:length(models))
+	print(models[[i]]$quality)
+
+
+# pred glasovanjem pripravimo matriko (st. vrstic = st. testnih primerov, st. stolpcev = st. razredov)
+predMat <- matrix(0, nrow=nrow(test), ncol=nlevels(train$Class))
+colnames(predMat) <- levels(train$Class)
+head(predMat)
+
+# vsak model klasificira testne primere in glasuje za izbrane razrede v skladu s svojo kvaliteto
+for (i in 1:length(models))
+{
+	pred <- as.character(predict(models[[i]]$model, test, type="class"))
+	for (j in 1:length(pred))
+		predMat[j, pred[j]] <- predMat[j, pred[j]] + models[[i]]$quality
+}
+
+head(predMat)
+
+predClass <- colnames(predMat)[max.col(predMat)]
+predicted <- factor(predClass, levels(vehicle$Class))
+
+CA(test$Class, predicted)
+```
+
+
+Boosting je implementiran tudi v knjiznici `adabag`.
+```{R}
+library(adabag)
+
+bm <- boosting(Class ~ ., train, mfinal=100)
+predictions <- predict(bm, test)
+names(predictions)
+
+predicted <- predictions$class
+CA(test$Class, predicted)
+```
