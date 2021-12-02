@@ -22,6 +22,7 @@ summary(zoo)
 ```
 ## Pregled ocen
 
+### Information Gain
 Evaluiramo atribute, glede na vrednost [informacijskega prispevka](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees).
 ```{R}
 sort(attrEval(type ~ ., zoo, "InfGain"), decreasing=T)
@@ -53,10 +54,16 @@ dt <- CoreModel(type ~ ., zoo, model="tree", selectionEstimator="InfGain")
 plot(dt, zoo)
 ```
 
+
+### Gini
+
 Isto slabo lastnost ima tudi ocena *gini*:    
 ```{R}
 sort(attrEval(type ~ ., zoo, "Gini"), decreasing=T)
 ```
+
+
+### Gain Ratio
 
 Z oceno *Gain Ratio* pa poskusamo problem precenjevanja vec vrednostnih atributov resiti tako,
 da vrednost informacijskega prispevka nekega atributa deli z entropijo nekega atributa.
@@ -68,17 +75,26 @@ Sicer ima tudi ta ocena eno slabo lastnost, in sicer precenjevanje konstantnih a
 sort(attrEval(type ~ ., zoo, "GainRatio"), decreasing=T)
 ```
 
+
+### Relief
+
+> ReliefF algorithm where k nearest instances have equal weight.
+
 Poznamo pa tudi druge mere, ki resijo zgornje probleme. Se najbolje se obnese ocena *MDL*.
 ```{R}
 sort(attrEval(type ~ ., zoo, "ReliefFequalK"), decreasing=T)
 sort(attrEval(type ~ ., zoo, "MDL"), decreasing=T)
 ```
 
+
+### Binarizacija atributov
+
 Se ena moznost, da resimo precenjevanje atributov pri oceni *informacijskega prispevka* in *gini*, je da atribute biniraliziramo:
 ```{R}
 sort(attrEval(type ~ ., zoo, "GainRatio", binaryEvaluation=T), decreasing=T)
 sort(attrEval(type ~ ., zoo, "Gini", binaryEvaluation=T), decreasing=T)
 ```
+
 
 ## Kratkovidnost ocen
 
@@ -93,11 +109,26 @@ plot(quadrant$a1, quadrant$a2, col=quadrant$Class)
 ```
 
 Pri takih primerih so problematicne tiste ocene (npr. informacijski prispevek) ki vsak atribut ocenjujejo zase. Tem ocenam recemo *kratkovidne ocene*, saj ne zaznajo interakcije med atributi.
+
+Spodnje metode v vecini najbolje ocenjujejo atribut a4, ki pa v resnici nima nobenega vpliva na ciljno spremenljivko.
+
+### Information Gain
 ```{R}
-# najbolje je ocenjen a4, ki pa nima nobenega vpliva
 sort(attrEval(Class ~ ., quadrant, "InfGain"), decreasing=T)
+```
+
+### Gain Ratio
+```{R}
 sort(attrEval(Class ~ ., quadrant, "GainRatio"), decreasing=T)
+```
+
+### Gini
+```{R}
 sort(attrEval(Class ~ ., quadrant, "Gini"), decreasing=T)
+```
+
+### MDL
+```{R}
 sort(attrEval(Class ~ ., quadrant, "MDL"), decreasing=T)
 ```
 
@@ -107,6 +138,9 @@ Posledica te slabe ocene, je da ne zgradimo zelo slab model:
 dt <- CoreModel(Class ~ ., quadrant, model="tree", selectionEstimator="InfGain")
 plot(dt, zoo)
 ```
+
+
+## Ne-kratkovidne ocene
 
 Primer ocen, ki upostevajo ocene drugih atributov, ter posledicno znajo zaznati interakcije med atributi.
 ```{R}
