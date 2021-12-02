@@ -1,67 +1,78 @@
-stavbe <- read.table("trainset.txt", header=T, sep=",", stringsAsFactors=T)
 stavbe <- read.table("trainset.txt", header=T, sep=",")
-
-# TODO: convert date strings to approprite date value (timestamp, date object,..)
 summary(stavbe)
 
-# vizualizacija posameznih atributov
-pie(table(stavbe$regija), xlab="Regija")
-hist(stavbe$stavba)
-pie(table(stavbe$namembnost), xlab="Namembnost")
-hist(stavbe$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
-hist(stavbe$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
-hist(stavbe$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
-hist(stavbe$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
-hist(stavbe$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
-hist(stavbe$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
-hist(stavbe$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
-hist(stavbe$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
-hist(stavbe$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
-hist(stavbe$smer_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
-
-install.packages("tidyverse")
-
-# vizualizacija korelacije med povrsino hise in porabo elektrike
-x <- stavbe$povrsina
-y <- stavbe$poraba
-plot(x, y, col="lightblue")
-abline(lm(y ~ x), col = "red", lwd = 3)
-
-# vizualizacija korelacije med leto izgradnje in porabo elektrike
-x <- stavbe$leto_izgradnje
-y <- stavbe$poraba
-plot(x, y, col="lightblue")
-abline(lm(y ~ x), col = "red", lwd = 3)
-
-
-# korelacijska matrika
-# https://rkabacoff.github.io/datavis/Models.html
-install.packages("mosaicData")
-install.packages("ggcorrplot")
-
-data(stavbe, package="mosaicData")
-
-# select numeric variables
-df <- dplyr::select_if(stavbe, is.numeric)
-
-# calulate the correlations
-r <- cor(df, use="complete.obs")
-round(r,2)
-
-library(ggplot2)
-library(ggcorrplot)
-ggcorrplot(r,
-           hc.order=T, # uredi po korelaciji
-           type="lower") # prikazi samo v spodnjem trikotniku
-
+for (i in list(2,4))
+  stavbe[,i] <- as.factor(stavbe[,i])
 
 # generiramo ucno in testno mnozico
 
-sel <- sample(1:nrow(stavbe), as.integer(nrow(stavbe) * 0.7), replace=F)
-train <- stavbe[sel,]
-test <- stavbe[-sel,]
+divideDataSet <- function (data, trainRatio = 0.7)
+{
+  sel <- sample(1:nrow(data), as.integer(nrow(data) * trainRatio), replace=F)
+  train <- stavbe[sel,]
+  test <- stavbe[-sel,]
+  list(train=train, test=test)
+}
+
+dataset <- divideDataSet(stavbe, 0.1)
+
+dataset$train
+
+scatter.smooth(x=dataset$train$povrsina, y=dataset$train$poraba, col="lightblue", xlab="Povrsina", ylab="Poraba")
 
 library(rpart)
 dt <- rpart(namembnost ~ ., data=train) # zgradimo odlocitveno drevo (decision tree)
 rpart.plot(dt)
 
+
+# priprava in evaluacija atributov
+
+library(lubridate)
+
+toMonth <- function(date) month(as.Date(date));
+toSeason <- function(input.date)
+{
+  numeric.date <- 100*month(input.date)+day(input.date)
+  ## input Seasons upper limits in the form MMDD in the "break =" option:
+  cuts <- base::cut(numeric.date, breaks = c(0,319,0620,0921,1220,1231)) 
+  # rename the resulting groups (could've been done within cut(...levels=) if "Winter" wasn't double
+  levels(cuts) <- c("Winter","Spring","Summer","Fall","Winter")
+  return(cuts)
+}
+
+evalClassFeatures <- function (formula, data)
+{
+  shortSighted <- list("InfGain", "GainRatio", "Gini", "MDL")
+  nonShortSighted <- list("Relief", "ReliefFequalK", "ReliefFexpRank")
+  estimators <- c(shortSighted, nonShortSighted)
+  for (estimator in estimators) {
+    pie(sort(attrEval(formula, data, estimator), decreasing=T), main=estimator)
+  }
+}
+
+table(getSeason(stavbe$datum))
+
+sort(attrEval(namembnost ~ ., dataset$test, "Relief"), decreasing=T)
+
+stavbe$letni_cas <- toSeason(stavbe$datum)
+stavbe$mesec <- toSeason(stavbe$datum)
+
+a <- attrEval(poraba ~ povrsina, dataset$train, "InfGain")
+
+r1 <- lm(poraba ~ regija, dataset$train)
+r2 <- lm(poraba ~ mesec, dataset$train)
+
+hist(dataset$test$poraba)
+
+predicted <- predict(r1, dataset$test)
+observed <- dataset$test$poraba
+plot(observed)
+points(predicted, col="red")
+
+summary(dataset$train)
+
+dataset$train$datum
+
+
+
+plot(stavbe)

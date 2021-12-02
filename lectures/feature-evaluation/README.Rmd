@@ -189,7 +189,8 @@ mean(test$insurance == predictedReduced)
 
 ## Metoda ovojnice
 
-Preveri vse potencne mnozice atributov, ter najde najde mnozico atributov, ki minimizira napako.
+Preveri vse potencne mnozice atributov, ter najde najde mnozico atributov, ki minimizira napako. 
+Ker je casovna kompleksnost tega algoritma eksponentnega reda, ta metoda ni uporabna pri vecjih podatkovnih mnozicah.
 ```{R}
 library(rpart)
 source("../wrapper.R")

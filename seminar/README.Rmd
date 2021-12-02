@@ -20,11 +20,18 @@ Najprej uvozimo in na kratko preglejmo podatke.
 Opazimo, da imamo 3 atribute tipa "character": `datum`, `regija` in `namembnost`. Atributa `regija` in `namembnost` (z indeksi `2` in `4`) imata le majhno stevilo vrednosti, zato jih bomo faktorizirali. Datum bomo pa kasneje preuredili v bolj smiselno obliko.
 ```{R}
 stavbe <- read.table("trainset.txt", header=T, sep=",")
+
 summary(stavbe)
 
-for (i in list(2,4))
-  stavbe[,i] <- as.factor(stavbe[,i])
-
+factorize <- function (data)
+{
+  for (i in 2:ncol(data)) {
+    if (!is.numeric(data[,i])) {
+      data[,i] <- as.factor(data[,i]) 
+    }
+  }
+}
+factorize(stavbe)
 summary(stavbe)
 ```
 
@@ -33,7 +40,7 @@ summary(stavbe)
 Najprej vizualizirajmo porazdelitvene vrednosti posameznih atributov, da dobimo boljsi vpogled v vsak atribut posebej.
 ```{R}
 pie(table(stavbe$regija), xlab="Regija")
-hist(stavbe$stavba, xlab="Oznaka stavbe", main="Histogram oznak stavb")
+pie(table(stavbe$stavba), xlab="Oznaka stavbe")
 pie(table(stavbe$namembnost), xlab="Namembnost")
 hist(stavbe$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
 hist(stavbe$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
@@ -92,4 +99,103 @@ round(r,2)
 ggcorrplot(r,
            hc.order=T, # uredi po korelaciji
            type="lower") # prikazi samo v spodnjem trikotniku
+```
+
+
+## Priprava atributov
+
+
+### Pomozne metode
+
+V naslednjem razdelku bomo pri obdelavi podatkov uporabili naslednje pomozne metode, ter knjiznico ``.
+```{R}
+library(lubridate)
+library(stringr)
+
+toMonth <- function(date) month(as.Date(date));
+toSeason <- function(input.date)
+{
+  numeric.date <- 100*month(input.date)+day(input.date)
+  ## input Seasons upper limits in the form MMDD in the "break =" option:
+  cuts <- base::cut(numeric.date, breaks = c(0,319,0620,0921,1220,1231)) 
+  # rename the resulting groups (could've been done within cut(...levels=) if "Winter" wasn't double
+  levels(cuts) <- c("Winter","Spring","Summer","Fall","Winter")
+  return(cuts)
+}
+isWeekend <- function(input.date)
+{
+  weekday <- strftime(input.date,'%A')
+  str_detect(strftime(stavbe$datum,'%A'), "Sunday|Monday")
+}
+isWinter <- function(input.date)
+{
+  toSeason(input.date) == "Winter"
+}
+```
+
+
+Sedaj bomo poskusali izboljsati kvaliteto posameznih atributov. Najbolj ociten atribut, ki potrebuje izboljsavo oz. obdelavo je `datum`.
+
+Najprej bomo napisali nekaj pomoznih metod za evaluacijo atributov. 
+
+Metoda `evalClassFeatures` bo evaluirala podatke z dano formulo z vsemi definiranimi ocenami za klasifikacijske probleme. Prav tako bo metoda `evalRegrFeatures` evaluirala atribute z definiranimi ocenami za regresijske probleme.
+
+```{R}
+library(CORElearn)
+
+evalFeatures <- function (formula, data, estimators)
+{
+  for (estimator in estimators) {
+    score = attrEval(formula, data, estimator);
+    
+    cat(paste(estimator, "\n"))
+    print(sort(score, decreasing=T))
+    cat("\n\n")
+  }
+}
+
+evalClassFeatures <- function (formula, data)
+{
+  shortSighted <- list("InfGain", "GainRatio", "Gini", "MDL")
+  nonShortSighted <- list("Relief", "ReliefFequalK", "ReliefFexpRank")
+  estimators <- c(shortSighted, nonShortSighted)
+  evalFeatures(formula, data, estimators)
+}
+
+evalRegrFeatures <- function (formula, data)
+{
+  estimators <- list("MSEofMean", "RReliefFexpRank")
+  evalFeatures(formula, data, estimators)
+}
+```
+
+
+Poglejmo si vse ocene za trenutno mnozico atributov:
+
+```{R}
+evalClassFeatures(namembnost ~ ., stavbe)
+```
+
+```{R}
+evalRegrFeatures(poraba ~ ., stavbe)
+```
+
+Dodamo atributa `letni_cas` ter `mesec`.
+```{R}
+stavbe$letni_cas <- toSeason(stavbe$datum)
+stavbe$mesec <- toMonth(stavbe$datum)
+stavbe$zima <- isWinter(stavbe$datum)
+stavbe$vikend <- isWeekend(stavbe$datum)
+
+# faktoriziramo atribute
+factorize(stavbe)
+```
+
+Ponovno evaluiramo ocene atributov:
+```{R}
+evalClassFeatures(namembnost ~ ., stavbe)
+```
+
+```{R}
+evalRegrFeatures(poraba ~ ., stavbe)
 ```
