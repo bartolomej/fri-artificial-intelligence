@@ -1,4 +1,7 @@
-stavbe <- read.table("trainset.txt", header=T, sep=",")
+d <- read.table("trainset.txt", header=T, sep=",")
+
+stavbe <- d[1:100,]
+head(stavbe)
 summary(stavbe)
 
 for (i in list(2,4))

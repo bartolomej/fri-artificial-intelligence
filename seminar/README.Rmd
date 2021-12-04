@@ -11,6 +11,24 @@ Cilj seminarske naloge je uporabiti metode strojnega učenja za gradnjo modelov 
 porabe električne energije (regresijski problem) in namembnosti stavbe (klasifikacijski problem),
 ustrezno ovrednotiti modele in jasno predstaviti dobljene rezultate.
 
+## Knjiznice in orodja
+
+```{R}
+library(lubridate) # delo z datumi
+library(stringr) # delo z znakovnimi nizi
+library(ggplot2)
+library(ggcorrplot)
+library(rpart)
+library(rpart.plot)
+library(CORElearn) # za ucenje
+library(nnet)
+library(randomForest)
+
+source("./common.R") # pomozne metode
+
+set.seed(0) # nastavimo random seed
+```
+
 ## Vizualizacija podatkov
 
 ### Uvoz podatkov
@@ -19,61 +37,62 @@ Najprej uvozimo in na kratko preglejmo podatke.
 
 Opazimo, da imamo 3 atribute tipa "character": `datum`, `regija` in `namembnost`. Atributa `regija` in `namembnost` (z indeksi `2` in `4`) imata le majhno stevilo vrednosti, zato jih bomo faktorizirali. Datum bomo pa kasneje preuredili v bolj smiselno obliko.
 ```{R}
-stavbe <- read.table("trainset.txt", header=T, sep=",")
+train <- read.table("trainset.txt", header=T, sep=",")
+test <- read.table("testset.txt", header=T, sep=",")
 
-summary(stavbe)
+# zmanjsamo mnozici za potrebo razvoja
+trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.01), replace=T)
+testSel <- sample(1:nrow(test), as.integer(nrow(test) * 0.004), replace=T)
+train <- train[trainSel,]
+test <- test[testSel,]
 
-factorize <- function (data)
-{
-  for (i in 2:ncol(data)) {
-    if (!is.numeric(data[,i])) {
-      data[,i] <- as.factor(data[,i]) 
-    }
-  }
-}
-factorize(stavbe)
-summary(stavbe)
+summary(train)
+
+train <- Factorize(train)
+test <- Factorize(test)
+
+summary(train)
 ```
 
 ### Izris grafov
 
 Najprej vizualizirajmo porazdelitvene vrednosti posameznih atributov, da dobimo boljsi vpogled v vsak atribut posebej.
 ```{R}
-pie(table(stavbe$regija), xlab="Regija")
-pie(table(stavbe$stavba), xlab="Oznaka stavbe")
-pie(table(stavbe$namembnost), xlab="Namembnost")
-hist(stavbe$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
-hist(stavbe$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
-hist(stavbe$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
-hist(stavbe$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
-hist(stavbe$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
-hist(stavbe$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
-hist(stavbe$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
-hist(stavbe$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
-hist(stavbe$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
-hist(stavbe$smer_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+pie(table(train$regija), xlab="Regija")
+pie(table(train$stavba), xlab="Oznaka stavbe")
+pie(table(train$namembnost), xlab="Namembnost")
+hist(train$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
+hist(train$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
+hist(train$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
+hist(train$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
+hist(train$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
+hist(train$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
+hist(train$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
+hist(train$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
+hist(train$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
+hist(train$smer_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 ```
 
 Pri nadalnji predikciji nam bo koristilo tudi nekaj intuicije o soodvisnosti med doloceni atributi. 
 
-Ze samo po sebi je logicno, da bodo nekateri atributi (npr. povrsina stavbe <-> poraba energije) v vecji medsebojni odvisnosti, kot nekateri drugi atributi (npr. smer vetra <-> poraba energije);
+Ze samo po sebi je logicno, da bodo nekateri atributi (npr. povrsina train <-> poraba energije) v vecji medsebojni odvisnosti, kot nekateri drugi atributi (npr. smer vetra <-> poraba energije);
 
 Naso hipotezo lahko dodatno potrdimo z nekaj grafi, kjer prikazemo korelacijo med izbranimi pari atributov.
 
 Zdaj izrisimo nekaj korelacijskih grafov, da potrimo ali pa ovrzemo nase hipoteze. Da bo trend se bolje viden, lahko na graf izrisemo se linearno regresijsko premico.
 
-Pri porabi elektricne energije v odvisnosti z povrsino stavbe vidimo, da obstaja jasen trend.
+Pri porabi elektricne energije v odvisnosti z povrsino train vidimo, da obstaja jasen trend.
 ```{R}
-x <- stavbe$povrsina
-y <- stavbe$poraba
+x <- train$povrsina
+y <- train$poraba
 plot(x, y, col="lightblue")
 abline(lm(y ~ x), col = "red", lwd = 3)
 ```
 
 Medtem ko pri grafu porabe energije v odvisnosti od smeri vetra jasne korelacije ni.
 ```{R}
-x <- stavbe$smer_vetra
-y <- stavbe$poraba
+x <- train$smer_vetra
+y <- train$poraba
 plot(x, y, col="lightblue")
 abline(lm(y ~ x), col = "red", lwd = 3)
 ```
@@ -84,13 +103,10 @@ Za to vrstno vizualizacijo bomo uporabili dve zunanji knjiznici `ggplot2` in `gg
 
 Ta graf nam izpise korelacijsko matriko, iz katere lahko razberemo korelacije med vsemi numericni atributi. Opazimo, da sta v najvecji medsebojni korelaciji res atributa `poraba` in `povrsina`.
 ```{R}
-library(ggplot2)
-library(ggcorrplot)
-
-data(stavbe, package="mosaicData")
+data(train, package="mosaicData")
 
 # izberemo samo numericne atribute
-df <- dplyr::select_if(stavbe, is.numeric)
+df <- dplyr::select_if(train, is.numeric)
 
 # izracunamo korelacije z metodo cor
 r <- cor(df, use="complete.obs")
@@ -107,33 +123,6 @@ ggcorrplot(r,
 
 ### Pomozne metode
 
-V naslednjem razdelku bomo pri obdelavi podatkov uporabili naslednje pomozne metode, ter knjiznico ``.
-```{R}
-library(lubridate)
-library(stringr)
-
-toMonth <- function(date) month(as.Date(date));
-toSeason <- function(input.date)
-{
-  numeric.date <- 100*month(input.date)+day(input.date)
-  ## input Seasons upper limits in the form MMDD in the "break =" option:
-  cuts <- base::cut(numeric.date, breaks = c(0,319,0620,0921,1220,1231)) 
-  # rename the resulting groups (could've been done within cut(...levels=) if "Winter" wasn't double
-  levels(cuts) <- c("Winter","Spring","Summer","Fall","Winter")
-  return(cuts)
-}
-isWeekend <- function(input.date)
-{
-  weekday <- strftime(input.date,'%A')
-  str_detect(strftime(stavbe$datum,'%A'), "Sunday|Monday")
-}
-isWinter <- function(input.date)
-{
-  toSeason(input.date) == "Winter"
-}
-```
-
-
 Sedaj bomo poskusali izboljsati kvaliteto posameznih atributov. Najbolj ociten atribut, ki potrebuje izboljsavo oz. obdelavo je `datum`.
 
 Najprej bomo napisali nekaj pomoznih metod za evaluacijo atributov. 
@@ -141,7 +130,6 @@ Najprej bomo napisali nekaj pomoznih metod za evaluacijo atributov.
 Metoda `evalClassFeatures` bo evaluirala podatke z dano formulo z vsemi definiranimi ocenami za klasifikacijske probleme. Prav tako bo metoda `evalRegrFeatures` evaluirala atribute z definiranimi ocenami za regresijske probleme.
 
 ```{R}
-library(CORElearn)
 
 evalFeatures <- function (formula, data, estimators)
 {
@@ -173,29 +161,175 @@ evalRegrFeatures <- function (formula, data)
 Poglejmo si vse ocene za trenutno mnozico atributov:
 
 ```{R}
-evalClassFeatures(namembnost ~ ., stavbe)
+evalClassFeatures(namembnost ~ ., train)
 ```
 
 ```{R}
-evalRegrFeatures(poraba ~ ., stavbe)
+evalRegrFeatures(poraba ~ ., train)
 ```
 
-Dodamo atributa `letni_cas` ter `mesec`.
+Poskusimo izboljsati prvotno podatkovno mnozico z dodajanjem / odstranjevanjem atributov.
 ```{R}
-stavbe$letni_cas <- toSeason(stavbe$datum)
-stavbe$mesec <- toMonth(stavbe$datum)
-stavbe$zima <- isWinter(stavbe$datum)
-stavbe$vikend <- isWeekend(stavbe$datum)
+classSetBase <- list(train=train, test=test)
+classSetExt <- list(train=train, test=test)
+classSetExt$train$datum <- NULL
+classSetExt$test$datum <- NULL
 
-# faktoriziramo atribute
-factorize(stavbe)
+summary(classSetBase$train)
+summary(classSetExt$train)
+
+regSetBase <- list(train=train, test=test)
+regSetExt <- list(train=train, test=test)
+
+ExtendRegSet <- function (set)
+{
+  set$letni_cas <- as.factor(ToSeason(set$datum))
+  set$mesec <- as.factor(ToMonth(set$datum))
+  set$zima <- as.factor(IsWinter(set$datum))
+  set$vikend <- as.factor(IsWeekend(set$datum))
+  set$datum <- NULL
+  set
+}
+
+regSetExt$train <- ExtendRegSet(regSetExt$train)
+regSetExt$test <- ExtendRegSet(regSetExt$test)
+
+summary(regSetBase$train)
+summary(regSetBase$train)
 ```
 
 Ponovno evaluiramo ocene atributov:
 ```{R}
-evalClassFeatures(namembnost ~ ., stavbe)
+evalClassFeatures(namembnost ~ ., classSetExt$train)
 ```
 
 ```{R}
-evalRegrFeatures(poraba ~ ., stavbe)
+evalRegrFeatures(poraba ~ ., regSetExt$train)
+```
+
+
+## Modeliranje
+
+### Klasifikacija
+
+#### Vecinski klasifikator
+
+```{R}
+# najveckrat se ponovi "izobrazevalna" namembnost
+sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
+```
+
+#### Odlocitveno drevo
+
+```{R}
+dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
+EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
+
+dtExt <- rpart(namembnost ~ ., data=classSetExt$train)
+EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
+```
+
+#### Odlocitveno drevo z rezanjem
+
+Izberemo vrednost parametra cp, ki ustreza minimalni napaki internega presnega preverjanja.
+```{R}
+dtBase <- rpart(namembnost ~ ., data=classSetBase$train, cp=0)
+cpTab <- printcp(dtBase)
+row <- which.min(cpTab[,"xerror"])
+th <- mean(c(cpTab[row, "CP"], cpTab[row-1, "CP"]))
+dtBase <- prune(dtBase, cp=th)
+EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
+
+dtExt <- rpart(namembnost ~ ., data=classSetExt$train, cp=0)
+cpTab <- printcp(dtExt)
+row <- which.min(cpTab[,"xerror"])
+th <- mean(c(cpTab[row, "CP"], cpTab[row-1, "CP"]))
+dtExt <- prune(dtExt, cp=th)
+EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
+```
+
+#### Naivni Bayes
+
+```{r}
+nbBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="bayes")
+EvaluateClassModel(nbBase, classSetBase$train, classSetBase$test)
+
+nbExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="bayes")
+EvaluateClassModel(nbExt, classSetExt$train, classSetExt$test)
+```
+
+#### K-bliznjih sosedov
+
+```{R}
+knnBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="knn", kInNN=5)
+EvaluateClassModel(knnBase, classSetBase$train, classSetBase$test)
+
+knnExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="knn", kInNN=5)
+EvaluateClassModel(knnExt, classSetExt$train, classSetExt$test)
+```
+
+
+#### Nakljucni gozd
+
+```{R}
+rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
+EvaluateClassModel(rfBase, classSetBase$train, classSetBase$test);
+
+rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
+EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
+```
+
+
+### Regresija
+
+
+#### Trivialni model
+
+```{R}
+meanValue <- mean(regSetBase$train$poraba)
+predicted <- rep(meanValue, nrow(regSetBase$test))
+observed <- regSetBase$test$poraba
+
+EvaluateTrivialRegModel(observed, predicted)
+```
+
+#### Linearna regresija
+```{R}
+lmBase <- lm(poraba ~ ., regSetBase$train)
+EvaluateRegModel(lmBase, regSetBase$train, regSetBase$test)
+
+lmExt <- lm(poraba ~ ., regSetExt$train)
+EvaluateRegModel(lmExt, regSetExt$train, regSetExt$test)
+```
+
+#### Regresijsko drevo
+
+```{R}
+baseModel <- rpart(poraba ~ ., data=regSetBase$train)
+EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+
+extModel <- rpart(poraba ~ ., data=regSetExt$train)
+EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+```
+
+
+#### Nakljucni gozd
+
+```{R}
+baseModel <- randomForest(poraba ~ ., data=regSetBase$train)
+EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+
+extModel <- randomForest(poraba ~ ., data=regSetExt$train)
+EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+```
+
+
+#### Nevronske mreze
+
+```{R}
+baseModel <- nnet(poraba ~ ., regSetBase$train, size=5, decay=0.001, maxit=10000, linout=T)
+EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+
+extModel <- nnet(poraba ~ ., regSetExt$train, size=5, decay=0.001, maxit=10000, linout=T)
+EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
 ```
