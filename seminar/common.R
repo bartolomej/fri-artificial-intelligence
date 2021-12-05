@@ -108,6 +108,22 @@ EvaluateClassModel <- function (model, train, test)
   print(paste("Information score:", infGain))
 }
 
+EvaluateClass <- function (train, test, predictedMat, observedMat)
+{
+  observed <- test$namembnost
+  predicted <- predict(model, test, type="class")
+  
+  brier <- BrierScore(observedMat, predictedMat)
+  print(paste("Brier score:", brier))
+  
+  ca <- CA(observed, predicted)
+  print(paste("Classification accuracy:", ca))
+  
+  infGain <- InfScore(train$namembnost, test$namembnost, predictedMat)
+  print(paste("Information score:", infGain))
+}
+
+
 
 # METODE ZA OCENJEVANJE REGRESIJSKIH MODELOV
 
@@ -279,5 +295,90 @@ runWrapper <- function (formula, traindata)
   
   set.seed(0)
   wrapper(formula, traindata, myTrainFunc, myPredictFunc, myEvalFunc, cvfolds=10)
+}
+
+voting <- function(predictions)
+{
+  res <- vector()
+  
+  for (i in 1 : nrow(predictions))    
+  {
+    vec <- unlist(predictions[i,]) # pretvorimo vrstico v vektor
+    res[i] <- names(which.max(table(vec))) # poiscemo napoved z najvec glasovi
+  }
+  
+  res
+}
+
+runVoting <- function (modelsDataFrame, observed)
+{
+  predicted <- factor(voting(modelsDataFrame), levels=levels(train$namembnost))
+  ca <- CA(observed, predicted)
+  print(paste("Classification accuracy:", ca))
+}
+
+runWeightedVoting <- function (predProb, observed) 
+{
+  predClass <- colnames(predProb)[max.col(predProb)]
+  predicted <- factor(predClass, levels(observed))
+  ca <- CA(observed, predicted)
+  print(paste("Classification accuracy:", ca))
+}
+
+
+runClassification <- function (formula, train, test)
+{
+  calcCA <- function(label, model) 
+  {
+    predicted <- predict(model, test, type="class")
+    observed <- droplevels(test$namembnost)
+    ca <- CA(observed, predicted)
+    print(paste(label, "classification accuracy:", ca))
+  }
+  
+  # trivialni klasifikator
+  trivialCa <- sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
+  print(paste("Trivial classification accuracy:", trivialCa))
+  
+  # odlocitveno drevo
+  dt <- rpart(formula, data=train)
+  calcCA("odlocitveno drevo", dt)
+  
+  # odlocitveno drevo z rezanjem (manualno nastavljenim cp parametrom)
+  #dt <- rpart(formula, data=train, cp=0)
+  #cpTab <- printcp(dt)
+  #row <- which.min(cpTab[,"xerror"])
+  #th <- mean(c(cpTab[row, "CP"], cpTab[row-1, "CP"]))
+  #dr <- prune(dt, cp=th)
+  #calcCA(dt)
+  
+  # naivni bayes
+  nb <- CoreModel(formula, data=train, model="bayes")
+  calcCA("naivni bayes", nb)
+  
+  # k-najblizjih sosedov
+  knn <- CoreModel(formula, data=train, model="knn", kInNN=5)
+  calcCA("k-najblizjih sosedov", knn)
+  
+  # nakljucni gozd
+  dr <- randomForest(formula, data=droplevels(train))
+  calcCA("nakljucni gozd", dr)
+}
+
+drawCharts <- function (data)
+{
+  pie(table(data$regija), xlab="Regija")
+  pie(table(data$stavba), xlab="Oznaka stavbe")
+  pie(table(data$namembnost), xlab="Namembnost")
+  hist(data$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
+  hist(data$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
+  hist(data$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
+  hist(data$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
+  hist(data$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
+  hist(data$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
+  hist(data$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
+  hist(data$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
+  hist(data$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
+  hist(data$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 }
 

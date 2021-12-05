@@ -23,6 +23,8 @@ library(rpart.plot)
 library(CORElearn) # za ucenje
 library(nnet)
 library(randomForest)
+library(ipred) # bagging
+library(adabag) # boosting
 
 source("./common.R") # pomozne metode
 
@@ -70,7 +72,7 @@ hist(train$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba 
 hist(train$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
 hist(train$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
 hist(train$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
-hist(train$smer_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+hist(train$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 ```
 
 Pri nadalnji predikciji nam bo koristilo tudi nekaj intuicije o soodvisnosti med doloceni atributi. 
@@ -290,7 +292,7 @@ EvaluateClassModel(knnExt, classSetExt$train, classSetExt$test)
 
 ```{R}
 rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
-EvaluateClassModel(rfBase, classSetBase$train, classSetBase$test);
+EvaluateClassModel(rfBase, classSetBase$train, classSetBase$test)
 
 rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
@@ -354,6 +356,10 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ## Izboljsava modelov
 
 ### Klasifikacija
+
+#### Metoda ovojnice
+
+Izboljsava klasifikacijskega modela z izbiro optimalne podmnozice atributov, ki minimizira doloceno oceno.
 ```{R}
 runWrapper(namembnost ~ ., classSetBase$train)
 
@@ -361,4 +367,128 @@ dtBase <- rpart(namembnost ~ povrsina + leto_izgradnje + stavba + datum + regija
 EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
 ```
 
-### Regresija
+#### Glasovanje
+
+Zgradimo modele z osnovno in popravljeno mnozico atributov:
+```{R}
+dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
+knnBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="knn", kInNN=5)
+rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
+
+dtExt <- rpart(namembnost ~ pritisk, data=classSetExt$train)
+knnExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="knn", kInNN=5)
+rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
+```
+
+Glasovanje z osnovno mnozico atributov:
+```{R}
+predDtBase <- predict(dtBase, classSetBase$test, type="class")
+predKnnBase <- predict(knnBase, classSetBase$test, type="class")
+predRfBase <- predict(rfBase, classSetBase$test, type="class")
+
+modelsDf <- data.frame(
+  predDtBase,
+  predKnnBase,
+  predRfBase
+)
+
+runVoting(modelsDf, classSetBase$test$namembnost)
+```
+
+Glasovanje z popravljeno mnozico atributov:
+```{R}
+predDtExt <- predict(dtExt, classSetExt$test, type="class")
+predKnnExt <- predict(knnExt, classSetExt$test, type="class")
+predRfExt <- predict(rfExt, classSetExt$test, type="class")
+
+modelsDf <- data.frame(
+  predDtExt,
+  predKnnExt,
+  predRfExt
+)
+
+runVoting(modelsDf, classSetExt$test$namembnost)
+```
+
+
+#### Utezeno glasovanje
+
+Glasovanje z osnovno mnozico atributov:
+```{R}
+predDtBase <- predict(dtBase, classSetBase$test, type="prob")
+predKnnBase <- predict(knnBase, classSetBase$test, type="prob")
+predRfBase <- predict(rfBase, classSetBase$test, type="prob")
+runWeightedVoting(predDtBase + predKnnBase + predRfBase, classSetBase$test$namembnost)
+```
+
+Glasovanje z popravljeno mnozico atributov:
+```{R}
+predDtExt <- predict(dtExt, classSetExt$test, type="prob")
+predKnnExt <- predict(knnExt, classSetExt$test, type="prob")
+predRfExt <- predict(rfExt, classSetExt$test, type="prob")
+runWeightedVoting(predDtExt + predKnnExt + predRfExt, classSetExt$test$namembnost)
+```
+
+#### Bagging
+
+Bagging z osnovno mnozico atributov:
+```{R}
+bag <- bagging(namembnost ~ ., classSetBase$train, nbagg=30)
+predictions <- predict(bag, classSetBase$test)
+ca <- CA(classSetBase$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+Bagging z popravljeno mnozico atributov:
+```{R}
+bag <- bagging(namembnost ~ ., classSetExt$train, nbagg=30)
+predictions <- predict(bag, classSetExt$test)
+ca <- CA(classSetExt$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+#### Boosting
+
+Boosting z osnovno mnozico atributov:
+```{R}
+bm <- boosting(namembnost ~ ., classSetBase$train, mfinal=100)
+predictions <- predict(bm, classSetBase$test)
+ca <- CA(classSetBase$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+Boosting z popravljeno mnozico atributov:
+```{R}
+bm <- boosting(namembnost ~ ., classSetExt$train, mfinal=100)
+predictions <- predict(bm, classSetExt$test)
+ca <- CA(classSetExt$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+## Primerjava po regijah
+
+### Klasifikacija
+
+Priprava podatkov.
+```{R}
+selTrain <- classSetExt$train$regija == "vzhodna"
+selTest <- classSetExt$test$regija == "vzhodna"
+
+extVzhodnaTrain <- classSetExt$train[selTrain,]
+extVzhodnaTest <- classSetExt$test[selTest,]
+extVzhodnaTrain$regija <- NULL
+extVzhodnaTest$regija <- NULL
+
+extZahodnaTrain <- classSetExt$train[!selTrain,]
+extZahodnaTest <- classSetExt$test[!selTest,]
+extZahodnaTrain$regija <- NULL
+extZahodnaTest$regija <- NULL
+```
+
+```{R}
+runClassification(namembnost ~ ., extVzhodnaTrain, extVzhodnaTest)
+```
+
+```{R}
+runClassification(namembnost ~ ., extZahodnaTrain, extZahodnaTest)
+```

@@ -41,6 +41,30 @@ library(randomForest)
     ##     margin
 
 ``` r
+library(ipred) # bagging
+library(adabag) # boosting
+```
+
+    ## Loading required package: caret
+
+    ## Loading required package: lattice
+
+    ## Loading required package: foreach
+
+    ## Loading required package: doParallel
+
+    ## Loading required package: iterators
+
+    ## Loading required package: parallel
+
+    ## 
+    ## Attaching package: 'adabag'
+
+    ## The following object is masked from 'package:ipred':
+    ## 
+    ##     bagging
+
+``` r
 source("./common.R") # pomozne metode
 
 set.seed(0) # nastavimo random seed
@@ -213,7 +237,7 @@ hist(train$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
 ![](README_files/figure-markdown_github/unnamed-chunk-3-12.png)
 
 ``` r
-hist(train$smer_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+hist(train$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-13.png)
@@ -871,7 +895,7 @@ EvaluateClassModel(knnExt, classSetExt$train, classSetExt$test)
 
 ``` r
 rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
-EvaluateClassModel(rfBase, classSetBase$train, classSetBase$test);
+EvaluateClassModel(rfBase, classSetBase$train, classSetBase$test)
 ```
 
     ## [1] "Brier score: 0.656205588628747"
@@ -1068,6 +1092,11 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 
 ### Klasifikacija
 
+#### Metoda ovojnice
+
+Izboljsava klasifikacijskega modela z izbiro optimalne podmnozice
+atributov, ki minimizira doloceno oceno.
+
 ``` r
 runWrapper(namembnost ~ ., classSetBase$train)
 ```
@@ -1187,4 +1216,165 @@ EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
     ## [1] "Classification accuracy: 0.514632107023411"
     ## [1] "Information score: 0.599764290298839"
 
-### Regresija
+#### Glasovanje
+
+Zgradimo modele z osnovno in popravljeno mnozico atributov:
+
+``` r
+dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
+knnBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="knn", kInNN=5)
+rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
+
+dtExt <- rpart(namembnost ~ pritisk, data=classSetExt$train)
+knnExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="knn", kInNN=5)
+rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
+```
+
+Glasovanje z osnovno mnozico atributov:
+
+``` r
+predDtBase <- predict(dtBase, classSetBase$test, type="class")
+predKnnBase <- predict(knnBase, classSetBase$test, type="class")
+predRfBase <- predict(rfBase, classSetBase$test, type="class")
+
+modelsDf <- data.frame(
+  predDtBase,
+  predKnnBase,
+  predRfBase
+)
+
+runVoting(modelsDf, classSetBase$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.5"
+
+Glasovanje z popravljeno mnozico atributov:
+
+``` r
+predDtExt <- predict(dtExt, classSetExt$test, type="class")
+predKnnExt <- predict(knnExt, classSetExt$test, type="class")
+predRfExt <- predict(rfExt, classSetExt$test, type="class")
+
+modelsDf <- data.frame(
+  predDtExt,
+  predKnnExt,
+  predRfExt
+)
+
+runVoting(modelsDf, classSetExt$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.508361204013378"
+
+#### Utezeno glasovanje
+
+Glasovanje z osnovno mnozico atributov:
+
+``` r
+predDtBase <- predict(dtBase, classSetBase$test, type="prob")
+predKnnBase <- predict(knnBase, classSetBase$test, type="prob")
+predRfBase <- predict(rfBase, classSetBase$test, type="prob")
+runWeightedVoting(predDtBase + predKnnBase + predRfBase, classSetBase$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.523829431438127"
+
+Glasovanje z popravljeno mnozico atributov:
+
+``` r
+predDtExt <- predict(dtExt, classSetExt$test, type="prob")
+predKnnExt <- predict(knnExt, classSetExt$test, type="prob")
+predRfExt <- predict(rfExt, classSetExt$test, type="prob")
+runWeightedVoting(predDtExt + predKnnExt + predRfExt, classSetExt$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.528846153846154"
+
+#### Bagging
+
+Bagging z osnovno mnozico atributov:
+
+``` r
+bag <- bagging(namembnost ~ ., classSetBase$train, nbagg=30)
+predictions <- predict(bag, classSetBase$test)
+ca <- CA(classSetBase$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.512959866220736"
+
+Bagging z popravljeno mnozico atributov:
+
+``` r
+bag <- bagging(namembnost ~ ., classSetExt$train, nbagg=30)
+predictions <- predict(bag, classSetExt$test)
+ca <- CA(classSetExt$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.53804347826087"
+
+#### Boosting
+
+Boosting z osnovno mnozico atributov:
+
+``` r
+bm <- boosting(namembnost ~ ., classSetBase$train, mfinal=100)
+predictions <- predict(bm, classSetBase$test)
+ca <- CA(classSetBase$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.492892976588629"
+
+Boosting z popravljeno mnozico atributov:
+
+``` r
+bm <- boosting(namembnost ~ ., classSetExt$train, mfinal=100)
+predictions <- predict(bm, classSetExt$test)
+ca <- CA(classSetExt$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.492892976588629"
+
+## Primerjava po regijah
+
+### Klasifikacija
+
+Priprava podatkov.
+
+``` r
+selTrain <- classSetExt$train$regija == "vzhodna"
+selTest <- classSetExt$test$regija == "vzhodna"
+
+extVzhodnaTrain <- classSetExt$train[selTrain,]
+extVzhodnaTest <- classSetExt$test[selTest,]
+extVzhodnaTrain$regija <- NULL
+extVzhodnaTest$regija <- NULL
+
+extZahodnaTrain <- classSetExt$train[!selTrain,]
+extZahodnaTest <- classSetExt$test[!selTest,]
+extZahodnaTrain$regija <- NULL
+extZahodnaTest$regija <- NULL
+```
+
+``` r
+runClassification(namembnost ~ ., extVzhodnaTrain, extVzhodnaTest)
+```
+
+    ## [1] "Trivial classification accuracy: 0.527433628318584"
+    ## [1] "odlocitveno drevo classification accuracy: 0.708849557522124"
+    ## [1] "naivni bayes classification accuracy: 0.587610619469027"
+    ## [1] "k-najblizjih sosedov classification accuracy: 0.530973451327434"
+    ## [1] "nakljucni gozd classification accuracy: 0.769026548672566"
+
+``` r
+runClassification(namembnost ~ ., extZahodnaTrain, extZahodnaTest)
+```
+
+    ## [1] "Trivial classification accuracy: 0.44215530903328"
+    ## [1] "odlocitveno drevo classification accuracy: 0.327258320126783"
+    ## [1] "naivni bayes classification accuracy: 0.329635499207607"
+    ## [1] "k-najblizjih sosedov classification accuracy: 0.388272583201268"
+    ## [1] "nakljucni gozd classification accuracy: 0.391442155309033"
