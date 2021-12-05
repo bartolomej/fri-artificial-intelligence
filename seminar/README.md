@@ -62,8 +62,8 @@ train <- read.table("trainset.txt", header=T, sep=",")
 test <- read.table("testset.txt", header=T, sep=",")
 
 # zmanjsamo mnozici za potrebo razvoja
-trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.01), replace=T)
-testSel <- sample(1:nrow(test), as.integer(nrow(test) * 0.004), replace=T)
+trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.1), replace=T)
+testSel <- sample(1:nrow(test), as.integer(nrow(test) * 0.1), replace=T)
 train <- train[trainSel,]
 test <- test[testSel,]
 
@@ -71,33 +71,33 @@ summary(train)
 ```
 
     ##     datum              regija              stavba        namembnost       
-    ##  Length:241         Length:241         Min.   :  1.00   Length:241        
-    ##  Class :character   Class :character   1st Qu.: 37.00   Class :character  
+    ##  Length:2412        Length:2412        Min.   :  1.00   Length:2412       
+    ##  Class :character   Class :character   1st Qu.: 39.00   Class :character  
     ##  Mode  :character   Mode  :character   Median : 77.00   Mode  :character  
-    ##                                        Mean   : 88.09                     
-    ##                                        3rd Qu.:139.00                     
-    ##                                        Max.   :191.00                     
+    ##                                        Mean   : 87.63                     
+    ##                                        3rd Qu.:135.00                     
+    ##                                        Max.   :193.00                     
     ##     povrsina       leto_izgradnje   temp_zraka     temp_rosisca    
-    ##  Min.   :  329.3   Min.   :1903   Min.   :-5.00   Min.   :-19.400  
-    ##  1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:11.10   1st Qu.: -1.700  
-    ##  Median : 6891.5   Median :1969   Median :19.40   Median :  3.900  
-    ##  Mean   :10842.5   Mean   :1969   Mean   :19.09   Mean   :  4.379  
-    ##  3rd Qu.:13386.0   3rd Qu.:1999   3rd Qu.:27.80   3rd Qu.: 11.700  
-    ##  Max.   :79000.4   Max.   :2017   Max.   :39.40   Max.   : 24.400  
+    ##  Min.   :  329.3   Min.   :1903   Min.   :-7.20   Min.   :-19.400  
+    ##  1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00   1st Qu.: -2.800  
+    ##  Median : 6735.1   Median :1970   Median :19.40   Median :  2.800  
+    ##  Mean   :10907.0   Mean   :1971   Mean   :19.18   Mean   :  3.844  
+    ##  3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90   3rd Qu.: 10.600  
+    ##  Max.   :79000.4   Max.   :2017   Max.   :41.70   Max.   : 25.000  
     ##    oblacnost        padavine          pritisk         smer_vetra   
     ##  Min.   :0.000   Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0  
-    ##  1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1012.1   1st Qu.: 70.0  
+    ##  1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9   1st Qu.: 70.0  
     ##  Median :4.000   Median : 0.0000   Median :1015.9   Median :140.0  
-    ##  Mean   :3.896   Mean   : 0.5021   Mean   :1017.0   Mean   :156.1  
-    ##  3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.3   3rd Qu.:260.0  
-    ##  Max.   :9.000   Max.   :56.0000   Max.   :1037.6   Max.   :360.0  
-    ##  hitrost_vetra       poraba       
-    ##  Min.   : 0.00   Min.   :   0.67  
-    ##  1st Qu.: 2.10   1st Qu.:  55.79  
-    ##  Median : 3.60   Median : 107.66  
-    ##  Mean   : 3.84   Mean   : 235.06  
-    ##  3rd Qu.: 5.10   3rd Qu.: 200.65  
-    ##  Max.   :11.80   Max.   :2554.89
+    ##  Mean   :3.676   Mean   : 0.3922   Mean   :1017.2   Mean   :153.8  
+    ##  3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2   3rd Qu.:240.0  
+    ##  Max.   :9.000   Max.   :56.0000   Max.   :1040.9   Max.   :360.0  
+    ##  hitrost_vetra        poraba      
+    ##  Min.   : 0.000   Min.   :   0.0  
+    ##  1st Qu.: 2.100   1st Qu.:  54.5  
+    ##  Median : 3.600   Median : 110.0  
+    ##  Mean   : 3.746   Mean   : 224.2  
+    ##  3rd Qu.: 5.100   3rd Qu.: 211.6  
+    ##  Max.   :12.400   Max.   :2683.3
 
 ``` r
 train <- Factorize(train)
@@ -106,34 +106,34 @@ test <- Factorize(test)
 summary(train)
 ```
 
-    ##      datum                regija        stavba                      namembnost 
-    ##  Min.   :2016-01-01   vzhodna:116   Min.   :  1.00   izobrazevalna       :141  
-    ##  1st Qu.:2016-03-26   zahodna:125   1st Qu.: 37.00   javno_storitvena    : 23  
-    ##  Median :2016-07-17                 Median : 77.00   kulturno_razvedrilna: 24  
-    ##  Mean   :2016-07-08                 Mean   : 88.09   poslovna            : 38  
-    ##  3rd Qu.:2016-10-22                 3rd Qu.:139.00   stanovanjska        : 15  
-    ##  Max.   :2016-12-27                 Max.   :191.00                             
-    ##     povrsina       leto_izgradnje   temp_zraka     temp_rosisca    
-    ##  Min.   :  329.3   Min.   :1903   Min.   :-5.00   Min.   :-19.400  
-    ##  1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:11.10   1st Qu.: -1.700  
-    ##  Median : 6891.5   Median :1969   Median :19.40   Median :  3.900  
-    ##  Mean   :10842.5   Mean   :1969   Mean   :19.09   Mean   :  4.379  
-    ##  3rd Qu.:13386.0   3rd Qu.:1999   3rd Qu.:27.80   3rd Qu.: 11.700  
-    ##  Max.   :79000.4   Max.   :2017   Max.   :39.40   Max.   : 24.400  
-    ##    oblacnost        padavine          pritisk         smer_vetra   
-    ##  Min.   :0.000   Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0  
-    ##  1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1012.1   1st Qu.: 70.0  
-    ##  Median :4.000   Median : 0.0000   Median :1015.9   Median :140.0  
-    ##  Mean   :3.896   Mean   : 0.5021   Mean   :1017.0   Mean   :156.1  
-    ##  3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.3   3rd Qu.:260.0  
-    ##  Max.   :9.000   Max.   :56.0000   Max.   :1037.6   Max.   :360.0  
-    ##  hitrost_vetra       poraba       
-    ##  Min.   : 0.00   Min.   :   0.67  
-    ##  1st Qu.: 2.10   1st Qu.:  55.79  
-    ##  Median : 3.60   Median : 107.66  
-    ##  Mean   : 3.84   Mean   : 235.06  
-    ##  3rd Qu.: 5.10   3rd Qu.: 200.65  
-    ##  Max.   :11.80   Max.   :2554.89
+    ##      datum                regija         stavba      
+    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
+    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
+    ##  Median :2016-07-09                  Median : 77.00  
+    ##  Mean   :2016-07-02                  Mean   : 87.63  
+    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
+    ##  Max.   :2016-12-31                  Max.   :193.00  
+    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
+    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
+    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
+    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
+    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
+    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
+    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
+    ##   temp_rosisca       oblacnost        padavine          pritisk      
+    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
+    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
+    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
+    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
+    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
+    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
+    ##    smer_vetra    hitrost_vetra        poraba      
+    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
+    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
+    ##  Median :140.0   Median : 3.600   Median : 110.0  
+    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
+    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
+    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
 
 ### Izris grafov
 
@@ -283,29 +283,29 @@ round(r,2)
 ```
 
     ##                stavba povrsina leto_izgradnje temp_zraka temp_rosisca oblacnost
-    ## stavba           1.00     0.11          -0.27      -0.55        -0.04      0.14
-    ## povrsina         0.11     1.00           0.04      -0.09         0.02      0.10
-    ## leto_izgradnje  -0.27     0.04           1.00       0.17         0.01     -0.11
-    ## temp_zraka      -0.55    -0.09           0.17       1.00         0.63     -0.33
-    ## temp_rosisca    -0.04     0.02           0.01       0.63         1.00      0.00
-    ## oblacnost        0.14     0.10          -0.11      -0.33         0.00      1.00
-    ## padavine         0.10    -0.05          -0.03      -0.10         0.02      0.17
-    ## pritisk          0.43     0.04          -0.05      -0.52        -0.32      0.01
-    ## smer_vetra       0.23     0.03          -0.09      -0.23        -0.08      0.13
-    ## hitrost_vetra    0.26     0.01          -0.16      -0.20        -0.11      0.13
-    ## poraba           0.10     0.89           0.09      -0.01         0.09      0.10
+    ## stavba           1.00     0.16          -0.22      -0.53         0.00      0.15
+    ## povrsina         0.16     1.00           0.11      -0.11        -0.01      0.05
+    ## leto_izgradnje  -0.22     0.11           1.00       0.14        -0.02      0.00
+    ## temp_zraka      -0.53    -0.11           0.14       1.00         0.61     -0.26
+    ## temp_rosisca     0.00    -0.01          -0.02       0.61         1.00      0.07
+    ## oblacnost        0.15     0.05           0.00      -0.26         0.07      1.00
+    ## padavine         0.10    -0.01          -0.02      -0.08         0.06      0.17
+    ## pritisk          0.41     0.04          -0.12      -0.56        -0.31     -0.05
+    ## smer_vetra       0.26     0.06          -0.05      -0.26        -0.13      0.06
+    ## hitrost_vetra    0.18     0.04          -0.03      -0.22        -0.17      0.08
+    ## poraba           0.13     0.83           0.15      -0.05         0.04      0.03
     ##                padavine pritisk smer_vetra hitrost_vetra poraba
-    ## stavba             0.10    0.43       0.23          0.26   0.10
-    ## povrsina          -0.05    0.04       0.03          0.01   0.89
-    ## leto_izgradnje    -0.03   -0.05      -0.09         -0.16   0.09
-    ## temp_zraka        -0.10   -0.52      -0.23         -0.20  -0.01
-    ## temp_rosisca       0.02   -0.32      -0.08         -0.11   0.09
-    ## oblacnost          0.17    0.01       0.13          0.13   0.10
-    ## padavine           1.00   -0.21       0.04         -0.01  -0.04
-    ## pritisk           -0.21    1.00      -0.12         -0.01  -0.04
-    ## smer_vetra         0.04   -0.12       1.00          0.52   0.05
-    ## hitrost_vetra     -0.01   -0.01       0.52          1.00   0.01
-    ## poraba            -0.04   -0.04       0.05          0.01   1.00
+    ## stavba             0.10    0.41       0.26          0.18   0.13
+    ## povrsina          -0.01    0.04       0.06          0.04   0.83
+    ## leto_izgradnje    -0.02   -0.12      -0.05         -0.03   0.15
+    ## temp_zraka        -0.08   -0.56      -0.26         -0.22  -0.05
+    ## temp_rosisca       0.06   -0.31      -0.13         -0.17   0.04
+    ## oblacnost          0.17   -0.05       0.06          0.08   0.03
+    ## padavine           1.00   -0.15       0.03         -0.01   0.00
+    ## pritisk           -0.15    1.00      -0.03         -0.03   0.01
+    ## smer_vetra         0.03   -0.03       1.00          0.54   0.05
+    ## hitrost_vetra     -0.01   -0.03       0.54          1.00   0.04
+    ## poraba             0.00    0.01       0.05          0.04   1.00
 
 ``` r
 ggcorrplot(r,
@@ -363,87 +363,87 @@ evalClassFeatures(namembnost ~ ., train)
 ```
 
     ## InfGain 
-    ##       povrsina leto_izgradnje         stavba         regija         poraba 
-    ##     0.26094822     0.18534642     0.16131770     0.15429434     0.11469703 
-    ##     temp_zraka     smer_vetra        pritisk  hitrost_vetra          datum 
-    ##     0.07377008     0.05349960     0.05193782     0.04212652     0.02949666 
-    ##      oblacnost   temp_rosisca       padavine 
-    ##     0.02596248     0.02374304     0.01511503 
+    ##       povrsina         regija         stavba leto_izgradnje     temp_zraka 
+    ##    0.250101491    0.190977025    0.190977025    0.162119934    0.057770952 
+    ##         poraba        pritisk     smer_vetra      oblacnost   temp_rosisca 
+    ##    0.055103230    0.036248185    0.035262339    0.016920944    0.008302622 
+    ##       padavine  hitrost_vetra          datum 
+    ##    0.008242992    0.007069367    0.006675803 
     ## 
     ## 
     ## GainRatio 
-    ##       povrsina         stavba         poraba leto_izgradnje         regija 
-    ##     0.46890303     0.41294907     0.37198217     0.18759160     0.15444975 
-    ##          datum  hitrost_vetra     temp_zraka   temp_rosisca       padavine 
-    ##     0.15046511     0.11957392     0.11922329     0.10046619     0.09475935 
-    ##     smer_vetra        pritisk      oblacnost 
-    ##     0.08491377     0.07521924     0.03622191 
+    ##         stavba       povrsina         poraba         regija leto_izgradnje 
+    ##     0.38984167     0.36987727     0.34551681     0.19171400     0.16259839 
+    ##   temp_rosisca        pritisk     temp_zraka  hitrost_vetra       padavine 
+    ##     0.09561334     0.08004080     0.07467698     0.07173461     0.06723994 
+    ##          datum     smer_vetra      oblacnost 
+    ##     0.06017320     0.03583389     0.03192463 
     ## 
     ## 
     ## Gini 
-    ##       povrsina leto_izgradnje         poraba         stavba         regija 
-    ##    0.060540963    0.057878804    0.029738764    0.022662621    0.021756999 
-    ##     temp_zraka        pritisk     smer_vetra   temp_rosisca          datum 
-    ##    0.014648399    0.014162830    0.008913156    0.008086358    0.006572557 
-    ##  hitrost_vetra      oblacnost       padavine 
-    ##    0.005937140    0.003791630    0.002004274 
+    ##       povrsina leto_izgradnje         regija         stavba         poraba 
+    ##    0.074979035    0.046192178    0.028507919    0.028507919    0.019063586 
+    ##     temp_zraka        pritisk     smer_vetra      oblacnost          datum 
+    ##    0.009468243    0.007142769    0.005958509    0.003026184    0.001867707 
+    ##  hitrost_vetra   temp_rosisca       padavine 
+    ##    0.001713742    0.001514270    0.001168672 
     ## 
     ## 
     ## MDL 
-    ##       povrsina leto_izgradnje         stavba         regija         poraba 
-    ##    0.211822979    0.142179611    0.111053887    0.102526721    0.075439186 
-    ##     temp_zraka     smer_vetra        pritisk  hitrost_vetra          datum 
-    ##    0.031140071    0.019008371    0.016094986    0.007026086    0.004291756 
-    ##       padavine   temp_rosisca      oblacnost 
-    ##   -0.007108406   -0.007113917   -0.011369776 
+    ##       povrsina         regija         stavba leto_izgradnje     temp_zraka 
+    ##    0.242232153    0.182346126    0.182346126    0.155104530    0.050977478 
+    ##         poraba        pritisk     smer_vetra      oblacnost   temp_rosisca 
+    ##    0.048718048    0.029652532    0.028674621    0.011039282    0.003219395 
+    ##       padavine          datum  hitrost_vetra 
+    ##    0.003206210    0.002645080    0.001615114 
     ## 
     ## 
     ## Relief 
-    ## leto_izgradnje       povrsina         stavba         poraba         regija 
-    ##     0.39205552     0.22844959     0.18999782     0.10187477     0.02904564 
-    ##       padavine          datum     smer_vetra      oblacnost        pritisk 
-    ##    -0.01036131    -0.03036747    -0.07899185    -0.08713693    -0.08841735 
-    ##   temp_rosisca     temp_zraka  hitrost_vetra 
-    ##    -0.11270265    -0.13365855    -0.13512436 
+    ## leto_izgradnje         stavba       povrsina         poraba         regija 
+    ##   0.3391643149   0.2109360604   0.2093195908   0.1433817086   0.0008291874 
+    ##       padavine     temp_zraka      oblacnost        pritisk   temp_rosisca 
+    ##  -0.0009552627  -0.0693258882  -0.0737976783  -0.0824222392  -0.0835101270 
+    ##          datum  hitrost_vetra     smer_vetra 
+    ##  -0.0840583990  -0.1075870647  -0.1216141515 
     ## 
     ## 
     ## ReliefFequalK 
-    ## leto_izgradnje         regija         stavba       povrsina         poraba 
-    ##    0.247349890    0.240853320    0.236383617    0.170676032    0.089869436 
-    ##     temp_zraka      oblacnost     smer_vetra          datum   temp_rosisca 
-    ##    0.065702746    0.059781838    0.051616427    0.035573951    0.024790658 
-    ##        pritisk  hitrost_vetra       padavine 
-    ##    0.023151769    0.006647580   -0.001379772 
+    ## leto_izgradnje         stavba       povrsina         regija         poraba 
+    ##   0.3748615641   0.3417402901   0.2220847867   0.1771195457   0.1239372049 
+    ##     temp_zraka     smer_vetra        pritisk          datum   temp_rosisca 
+    ##   0.0619396491   0.0467935444   0.0355393489   0.0239461498   0.0205776214 
+    ##      oblacnost  hitrost_vetra       padavine 
+    ##   0.0162916729   0.0072822804   0.0007959659 
     ## 
     ## 
     ## ReliefFexpRank 
-    ##         regija leto_izgradnje         stavba       povrsina         poraba 
-    ##   0.2376891317   0.1948959946   0.1902773310   0.1464373207   0.0735005617 
-    ##      oblacnost     temp_zraka     smer_vetra        pritisk          datum 
-    ##   0.0622345489   0.0620945516   0.0573620099   0.0461669445   0.0381347190 
-    ##   temp_rosisca  hitrost_vetra       padavine 
-    ##   0.0305440100   0.0193483169   0.0000963023
+    ## leto_izgradnje         stavba       povrsina         regija         poraba 
+    ##   0.3594335021   0.3329030457   0.2105280298   0.2029986303   0.1138472395 
+    ##     temp_zraka     smer_vetra        pritisk          datum   temp_rosisca 
+    ##   0.0610981372   0.0302705419   0.0276094367   0.0181816406   0.0170283848 
+    ##      oblacnost       padavine  hitrost_vetra 
+    ##   0.0100941989  -0.0004917695  -0.0062426174
 
 ``` r
 evalRegrFeatures(poraba ~ ., train)
 ```
 
     ## MSEofMean 
-    ##       povrsina leto_izgradnje     namembnost   temp_rosisca         stavba 
-    ##      -47987.59     -128189.82     -130093.89     -133786.24     -135019.76 
-    ##     temp_zraka  hitrost_vetra      oblacnost          datum         regija 
-    ##     -135379.17     -135613.97     -135613.97     -136172.39     -136236.02 
-    ##        pritisk     smer_vetra       padavine 
-    ##     -136527.75     -137521.28     -138671.96 
+    ##       povrsina leto_izgradnje         stavba     namembnost         regija 
+    ##      -50576.57      -95339.86      -98047.76     -101243.82     -101924.27 
+    ##   temp_rosisca     temp_zraka      oblacnost          datum     smer_vetra 
+    ##     -102319.77     -102331.27     -102339.53     -102653.93     -103055.20 
+    ##        pritisk  hitrost_vetra       padavine 
+    ##     -103086.97     -103121.73     -103231.44 
     ## 
     ## 
     ## RReliefFexpRank 
-    ##       povrsina     namembnost leto_izgradnje     smer_vetra       padavine 
-    ##   0.4148484615   0.1225163627   0.1037141117   0.0124375741   0.0090254730 
-    ##         regija         stavba  hitrost_vetra      oblacnost   temp_rosisca 
-    ##   0.0009276509  -0.0088403733  -0.0336787316  -0.0351815357  -0.0417578515 
-    ##     temp_zraka        pritisk          datum 
-    ##  -0.0435313703  -0.0438306320  -0.0574679447
+    ##       povrsina leto_izgradnje     namembnost         stavba       padavine 
+    ##   0.4413738717   0.1890857951   0.1254954539   0.1065823219   0.0013918771 
+    ##         regija        pritisk     temp_zraka      oblacnost   temp_rosisca 
+    ##  -0.0001330178  -0.0835504967  -0.0873438431  -0.0880498899  -0.1008200969 
+    ##  hitrost_vetra          datum     smer_vetra 
+    ##  -0.1086545339  -0.1188974223  -0.1253054663
 
 Poskusimo izboljsati prvotno podatkovno mnozico z dodajanjem /
 odstranjevanjem atributov.
@@ -457,67 +457,67 @@ classSetExt$test$datum <- NULL
 summary(classSetBase$train)
 ```
 
-    ##      datum                regija        stavba                      namembnost 
-    ##  Min.   :2016-01-01   vzhodna:116   Min.   :  1.00   izobrazevalna       :141  
-    ##  1st Qu.:2016-03-26   zahodna:125   1st Qu.: 37.00   javno_storitvena    : 23  
-    ##  Median :2016-07-17                 Median : 77.00   kulturno_razvedrilna: 24  
-    ##  Mean   :2016-07-08                 Mean   : 88.09   poslovna            : 38  
-    ##  3rd Qu.:2016-10-22                 3rd Qu.:139.00   stanovanjska        : 15  
-    ##  Max.   :2016-12-27                 Max.   :191.00                             
-    ##     povrsina       leto_izgradnje   temp_zraka     temp_rosisca    
-    ##  Min.   :  329.3   Min.   :1903   Min.   :-5.00   Min.   :-19.400  
-    ##  1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:11.10   1st Qu.: -1.700  
-    ##  Median : 6891.5   Median :1969   Median :19.40   Median :  3.900  
-    ##  Mean   :10842.5   Mean   :1969   Mean   :19.09   Mean   :  4.379  
-    ##  3rd Qu.:13386.0   3rd Qu.:1999   3rd Qu.:27.80   3rd Qu.: 11.700  
-    ##  Max.   :79000.4   Max.   :2017   Max.   :39.40   Max.   : 24.400  
-    ##    oblacnost        padavine          pritisk         smer_vetra   
-    ##  Min.   :0.000   Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0  
-    ##  1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1012.1   1st Qu.: 70.0  
-    ##  Median :4.000   Median : 0.0000   Median :1015.9   Median :140.0  
-    ##  Mean   :3.896   Mean   : 0.5021   Mean   :1017.0   Mean   :156.1  
-    ##  3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.3   3rd Qu.:260.0  
-    ##  Max.   :9.000   Max.   :56.0000   Max.   :1037.6   Max.   :360.0  
-    ##  hitrost_vetra       poraba       
-    ##  Min.   : 0.00   Min.   :   0.67  
-    ##  1st Qu.: 2.10   1st Qu.:  55.79  
-    ##  Median : 3.60   Median : 107.66  
-    ##  Mean   : 3.84   Mean   : 235.06  
-    ##  3rd Qu.: 5.10   3rd Qu.: 200.65  
-    ##  Max.   :11.80   Max.   :2554.89
+    ##      datum                regija         stavba      
+    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
+    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
+    ##  Median :2016-07-09                  Median : 77.00  
+    ##  Mean   :2016-07-02                  Mean   : 87.63  
+    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
+    ##  Max.   :2016-12-31                  Max.   :193.00  
+    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
+    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
+    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
+    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
+    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
+    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
+    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
+    ##   temp_rosisca       oblacnost        padavine          pritisk      
+    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
+    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
+    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
+    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
+    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
+    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
+    ##    smer_vetra    hitrost_vetra        poraba      
+    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
+    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
+    ##  Median :140.0   Median : 3.600   Median : 110.0  
+    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
+    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
+    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
 
 ``` r
 summary(classSetExt$train)
 ```
 
-    ##      regija        stavba                      namembnost     povrsina      
-    ##  vzhodna:116   Min.   :  1.00   izobrazevalna       :141   Min.   :  329.3  
-    ##  zahodna:125   1st Qu.: 37.00   javno_storitvena    : 23   1st Qu.: 4274.2  
-    ##                Median : 77.00   kulturno_razvedrilna: 24   Median : 6891.5  
-    ##                Mean   : 88.09   poslovna            : 38   Mean   :10842.5  
-    ##                3rd Qu.:139.00   stanovanjska        : 15   3rd Qu.:13386.0  
-    ##                Max.   :191.00                              Max.   :79000.4  
+    ##      regija         stavba                      namembnost      povrsina      
+    ##  vzhodna:1118   Min.   :  1.00   izobrazevalna       :1359   Min.   :  329.3  
+    ##  zahodna:1294   1st Qu.: 39.00   javno_storitvena    : 282   1st Qu.: 4274.2  
+    ##                 Median : 77.00   kulturno_razvedrilna: 298   Median : 6735.1  
+    ##                 Mean   : 87.63   poslovna            : 316   Mean   :10907.0  
+    ##                 3rd Qu.:135.00   stanovanjska        : 157   3rd Qu.:14409.3  
+    ##                 Max.   :193.00                               Max.   :79000.4  
     ##  leto_izgradnje   temp_zraka     temp_rosisca       oblacnost    
-    ##  Min.   :1903   Min.   :-5.00   Min.   :-19.400   Min.   :0.000  
-    ##  1st Qu.:1950   1st Qu.:11.10   1st Qu.: -1.700   1st Qu.:2.000  
-    ##  Median :1969   Median :19.40   Median :  3.900   Median :4.000  
-    ##  Mean   :1969   Mean   :19.09   Mean   :  4.379   Mean   :3.896  
-    ##  3rd Qu.:1999   3rd Qu.:27.80   3rd Qu.: 11.700   3rd Qu.:6.000  
-    ##  Max.   :2017   Max.   :39.40   Max.   : 24.400   Max.   :9.000  
-    ##     padavine          pritisk         smer_vetra    hitrost_vetra  
-    ##  Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0   Min.   : 0.00  
-    ##  1st Qu.: 0.0000   1st Qu.:1012.1   1st Qu.: 70.0   1st Qu.: 2.10  
-    ##  Median : 0.0000   Median :1015.9   Median :140.0   Median : 3.60  
-    ##  Mean   : 0.5021   Mean   :1017.0   Mean   :156.1   Mean   : 3.84  
-    ##  3rd Qu.: 0.0000   3rd Qu.:1022.3   3rd Qu.:260.0   3rd Qu.: 5.10  
-    ##  Max.   :56.0000   Max.   :1037.6   Max.   :360.0   Max.   :11.80  
-    ##      poraba       
-    ##  Min.   :   0.67  
-    ##  1st Qu.:  55.79  
-    ##  Median : 107.66  
-    ##  Mean   : 235.06  
-    ##  3rd Qu.: 200.65  
-    ##  Max.   :2554.89
+    ##  Min.   :1903   Min.   :-7.20   Min.   :-19.400   Min.   :0.000  
+    ##  1st Qu.:1950   1st Qu.:10.00   1st Qu.: -2.800   1st Qu.:2.000  
+    ##  Median :1970   Median :19.40   Median :  2.800   Median :4.000  
+    ##  Mean   :1971   Mean   :19.18   Mean   :  3.844   Mean   :3.676  
+    ##  3rd Qu.:2001   3rd Qu.:28.90   3rd Qu.: 10.600   3rd Qu.:6.000  
+    ##  Max.   :2017   Max.   :41.70   Max.   : 25.000   Max.   :9.000  
+    ##     padavine          pritisk         smer_vetra    hitrost_vetra   
+    ##  Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0   Min.   : 0.000  
+    ##  1st Qu.: 0.0000   1st Qu.:1011.9   1st Qu.: 70.0   1st Qu.: 2.100  
+    ##  Median : 0.0000   Median :1015.9   Median :140.0   Median : 3.600  
+    ##  Mean   : 0.3922   Mean   :1017.2   Mean   :153.8   Mean   : 3.746  
+    ##  3rd Qu.: 0.0000   3rd Qu.:1022.2   3rd Qu.:240.0   3rd Qu.: 5.100  
+    ##  Max.   :56.0000   Max.   :1040.9   Max.   :360.0   Max.   :12.400  
+    ##      poraba      
+    ##  Min.   :   0.0  
+    ##  1st Qu.:  54.5  
+    ##  Median : 110.0  
+    ##  Mean   : 224.2  
+    ##  3rd Qu.: 211.6  
+    ##  Max.   :2683.3
 
 ``` r
 regSetBase <- list(train=train, test=test)
@@ -526,10 +526,27 @@ regSetExt <- list(train=train, test=test)
 ExtendRegSet <- function (set)
 {
   set$letni_cas <- as.factor(ToSeason(set$datum))
-  set$mesec <- as.factor(ToMonth(set$datum))
-  set$zima <- as.factor(IsWinter(set$datum))
-  set$vikend <- as.factor(IsWeekend(set$datum))
+  #set$mesec <- as.factor(ToMonth(set$datum))
+  #set$zima <- as.factor(IsWinter(set$datum))
+  #set$vikend <- as.factor(IsWeekend(set$datum))
+  
   set$datum <- NULL
+  set$stavba <- NULL
+  set$temp_rosisca <- NULL
+  set$padavine <- NULL
+  set$pritisk <- NULL
+  set$smer_vetra <- NULL
+  set$hitrost_vetra <- NULL
+  
+  set$leto_izgradnje <- NULL
+  set$regija <- NULL
+  set$namembnost <- NULL
+  set$temp_zraka <- NULL
+  
+  set$oblacnost <- log1p(set$oblacnost)
+  set$poraba <- log1p(set$poraba)
+  set$povrsina <- log1p(set$povrsina)
+  
   set
 }
 
@@ -539,67 +556,67 @@ regSetExt$test <- ExtendRegSet(regSetExt$test)
 summary(regSetBase$train)
 ```
 
-    ##      datum                regija        stavba                      namembnost 
-    ##  Min.   :2016-01-01   vzhodna:116   Min.   :  1.00   izobrazevalna       :141  
-    ##  1st Qu.:2016-03-26   zahodna:125   1st Qu.: 37.00   javno_storitvena    : 23  
-    ##  Median :2016-07-17                 Median : 77.00   kulturno_razvedrilna: 24  
-    ##  Mean   :2016-07-08                 Mean   : 88.09   poslovna            : 38  
-    ##  3rd Qu.:2016-10-22                 3rd Qu.:139.00   stanovanjska        : 15  
-    ##  Max.   :2016-12-27                 Max.   :191.00                             
-    ##     povrsina       leto_izgradnje   temp_zraka     temp_rosisca    
-    ##  Min.   :  329.3   Min.   :1903   Min.   :-5.00   Min.   :-19.400  
-    ##  1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:11.10   1st Qu.: -1.700  
-    ##  Median : 6891.5   Median :1969   Median :19.40   Median :  3.900  
-    ##  Mean   :10842.5   Mean   :1969   Mean   :19.09   Mean   :  4.379  
-    ##  3rd Qu.:13386.0   3rd Qu.:1999   3rd Qu.:27.80   3rd Qu.: 11.700  
-    ##  Max.   :79000.4   Max.   :2017   Max.   :39.40   Max.   : 24.400  
-    ##    oblacnost        padavine          pritisk         smer_vetra   
-    ##  Min.   :0.000   Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0  
-    ##  1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1012.1   1st Qu.: 70.0  
-    ##  Median :4.000   Median : 0.0000   Median :1015.9   Median :140.0  
-    ##  Mean   :3.896   Mean   : 0.5021   Mean   :1017.0   Mean   :156.1  
-    ##  3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.3   3rd Qu.:260.0  
-    ##  Max.   :9.000   Max.   :56.0000   Max.   :1037.6   Max.   :360.0  
-    ##  hitrost_vetra       poraba       
-    ##  Min.   : 0.00   Min.   :   0.67  
-    ##  1st Qu.: 2.10   1st Qu.:  55.79  
-    ##  Median : 3.60   Median : 107.66  
-    ##  Mean   : 3.84   Mean   : 235.06  
-    ##  3rd Qu.: 5.10   3rd Qu.: 200.65  
-    ##  Max.   :11.80   Max.   :2554.89
+    ##      datum                regija         stavba      
+    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
+    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
+    ##  Median :2016-07-09                  Median : 77.00  
+    ##  Mean   :2016-07-02                  Mean   : 87.63  
+    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
+    ##  Max.   :2016-12-31                  Max.   :193.00  
+    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
+    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
+    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
+    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
+    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
+    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
+    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
+    ##   temp_rosisca       oblacnost        padavine          pritisk      
+    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
+    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
+    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
+    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
+    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
+    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
+    ##    smer_vetra    hitrost_vetra        poraba      
+    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
+    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
+    ##  Median :140.0   Median : 3.600   Median : 110.0  
+    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
+    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
+    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
 
 ``` r
 summary(regSetBase$train)
 ```
 
-    ##      datum                regija        stavba                      namembnost 
-    ##  Min.   :2016-01-01   vzhodna:116   Min.   :  1.00   izobrazevalna       :141  
-    ##  1st Qu.:2016-03-26   zahodna:125   1st Qu.: 37.00   javno_storitvena    : 23  
-    ##  Median :2016-07-17                 Median : 77.00   kulturno_razvedrilna: 24  
-    ##  Mean   :2016-07-08                 Mean   : 88.09   poslovna            : 38  
-    ##  3rd Qu.:2016-10-22                 3rd Qu.:139.00   stanovanjska        : 15  
-    ##  Max.   :2016-12-27                 Max.   :191.00                             
-    ##     povrsina       leto_izgradnje   temp_zraka     temp_rosisca    
-    ##  Min.   :  329.3   Min.   :1903   Min.   :-5.00   Min.   :-19.400  
-    ##  1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:11.10   1st Qu.: -1.700  
-    ##  Median : 6891.5   Median :1969   Median :19.40   Median :  3.900  
-    ##  Mean   :10842.5   Mean   :1969   Mean   :19.09   Mean   :  4.379  
-    ##  3rd Qu.:13386.0   3rd Qu.:1999   3rd Qu.:27.80   3rd Qu.: 11.700  
-    ##  Max.   :79000.4   Max.   :2017   Max.   :39.40   Max.   : 24.400  
-    ##    oblacnost        padavine          pritisk         smer_vetra   
-    ##  Min.   :0.000   Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0  
-    ##  1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1012.1   1st Qu.: 70.0  
-    ##  Median :4.000   Median : 0.0000   Median :1015.9   Median :140.0  
-    ##  Mean   :3.896   Mean   : 0.5021   Mean   :1017.0   Mean   :156.1  
-    ##  3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.3   3rd Qu.:260.0  
-    ##  Max.   :9.000   Max.   :56.0000   Max.   :1037.6   Max.   :360.0  
-    ##  hitrost_vetra       poraba       
-    ##  Min.   : 0.00   Min.   :   0.67  
-    ##  1st Qu.: 2.10   1st Qu.:  55.79  
-    ##  Median : 3.60   Median : 107.66  
-    ##  Mean   : 3.84   Mean   : 235.06  
-    ##  3rd Qu.: 5.10   3rd Qu.: 200.65  
-    ##  Max.   :11.80   Max.   :2554.89
+    ##      datum                regija         stavba      
+    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
+    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
+    ##  Median :2016-07-09                  Median : 77.00  
+    ##  Mean   :2016-07-02                  Mean   : 87.63  
+    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
+    ##  Max.   :2016-12-31                  Max.   :193.00  
+    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
+    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
+    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
+    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
+    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
+    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
+    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
+    ##   temp_rosisca       oblacnost        padavine          pritisk      
+    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
+    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
+    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
+    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
+    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
+    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
+    ##    smer_vetra    hitrost_vetra        poraba      
+    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
+    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
+    ##  Median :140.0   Median : 3.600   Median : 110.0  
+    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
+    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
+    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
 
 Ponovno evaluiramo ocene atributov:
 
@@ -608,91 +625,79 @@ evalClassFeatures(namembnost ~ ., classSetExt$train)
 ```
 
     ## InfGain 
-    ##       povrsina leto_izgradnje         stavba         regija         poraba 
-    ##     0.26094822     0.18534642     0.16131770     0.15429434     0.11469703 
-    ##     temp_zraka     smer_vetra        pritisk  hitrost_vetra      oblacnost 
-    ##     0.07377008     0.05349960     0.05193782     0.04212652     0.02596248 
-    ##   temp_rosisca       padavine 
-    ##     0.02374304     0.01511503 
+    ##       povrsina         regija         stavba leto_izgradnje     temp_zraka 
+    ##    0.250101491    0.190977025    0.190977025    0.162119934    0.057770952 
+    ##         poraba        pritisk     smer_vetra      oblacnost   temp_rosisca 
+    ##    0.055103230    0.036248185    0.035262339    0.016920944    0.008302622 
+    ##       padavine  hitrost_vetra 
+    ##    0.008242992    0.007069367 
     ## 
     ## 
     ## GainRatio 
-    ##       povrsina         stavba         poraba leto_izgradnje         regija 
-    ##     0.46890303     0.41294907     0.37198217     0.18759160     0.15444975 
-    ##  hitrost_vetra     temp_zraka   temp_rosisca       padavine     smer_vetra 
-    ##     0.11957392     0.11922329     0.10046619     0.09475935     0.08491377 
-    ##        pritisk      oblacnost 
-    ##     0.07521924     0.03622191 
+    ##         stavba       povrsina         poraba         regija leto_izgradnje 
+    ##     0.38984167     0.36987727     0.34551681     0.19171400     0.16259839 
+    ##   temp_rosisca        pritisk     temp_zraka  hitrost_vetra       padavine 
+    ##     0.09561334     0.08004080     0.07467698     0.07173461     0.06723994 
+    ##     smer_vetra      oblacnost 
+    ##     0.03583389     0.03192463 
     ## 
     ## 
     ## Gini 
-    ##       povrsina leto_izgradnje         poraba         stavba         regija 
-    ##    0.060540963    0.057878804    0.029738764    0.022662621    0.021756999 
-    ##     temp_zraka        pritisk     smer_vetra   temp_rosisca  hitrost_vetra 
-    ##    0.014648399    0.014162830    0.008913156    0.008086358    0.005937140 
-    ##      oblacnost       padavine 
-    ##    0.003791630    0.002004274 
+    ##       povrsina leto_izgradnje         regija         stavba         poraba 
+    ##    0.074979035    0.046192178    0.028507919    0.028507919    0.019063586 
+    ##     temp_zraka        pritisk     smer_vetra      oblacnost  hitrost_vetra 
+    ##    0.009468243    0.007142769    0.005958509    0.003026184    0.001713742 
+    ##   temp_rosisca       padavine 
+    ##    0.001514270    0.001168672 
     ## 
     ## 
     ## MDL 
-    ##       povrsina leto_izgradnje         stavba         regija         poraba 
-    ##    0.211822979    0.142179611    0.111053887    0.102526721    0.075439186 
-    ##     temp_zraka     smer_vetra        pritisk  hitrost_vetra       padavine 
-    ##    0.031140071    0.019008371    0.016094986    0.007026086   -0.007108406 
-    ##   temp_rosisca      oblacnost 
-    ##   -0.007113917   -0.011369776 
+    ##       povrsina         regija         stavba leto_izgradnje     temp_zraka 
+    ##    0.242232153    0.182346126    0.182346126    0.155104530    0.050977478 
+    ##         poraba        pritisk     smer_vetra      oblacnost   temp_rosisca 
+    ##    0.048718048    0.029652532    0.028674621    0.011039282    0.003219395 
+    ##       padavine  hitrost_vetra 
+    ##    0.003206210    0.001615114 
     ## 
     ## 
     ## Relief 
-    ## leto_izgradnje       povrsina         stavba         poraba         regija 
-    ##    0.432991192    0.237263577    0.200189270    0.125660089    0.020746888 
-    ##       padavine      oblacnost     smer_vetra  hitrost_vetra        pritisk 
-    ##   -0.001164738   -0.091286307   -0.092823114   -0.120285065   -0.121632910 
-    ##   temp_rosisca     temp_zraka 
-    ##   -0.135325287   -0.158498748 
+    ## leto_izgradnje         stavba       povrsina         poraba         regija 
+    ##    0.371825085    0.251589276    0.232279437    0.153012381    0.002072968 
+    ##       padavine     temp_zraka        pritisk      oblacnost   temp_rosisca 
+    ##   -0.002911854   -0.088117411   -0.090290032   -0.090796020   -0.104234209 
+    ##  hitrost_vetra     smer_vetra 
+    ##   -0.107830025   -0.127026903 
     ## 
     ## 
     ## ReliefFequalK 
-    ## leto_izgradnje         regija         stavba       povrsina         poraba 
-    ##    0.261739629    0.245492547    0.245014202    0.174224172    0.090160736 
-    ##     smer_vetra      oblacnost     temp_zraka        pritisk   temp_rosisca 
-    ##    0.054307170    0.053767874    0.041229064    0.025360030    0.018292332 
-    ##  hitrost_vetra       padavine 
-    ##    0.007274190   -0.000518989 
+    ## leto_izgradnje         stavba       povrsina         regija         poraba 
+    ##   4.049848e-01   3.651760e-01   2.349982e-01   1.778450e-01   1.353718e-01 
+    ##     temp_zraka     smer_vetra        pritisk   temp_rosisca       padavine 
+    ##   4.229916e-02   3.061915e-02   1.983897e-02   6.617107e-03   6.905270e-04 
+    ##      oblacnost  hitrost_vetra 
+    ##  -8.498741e-05  -6.046736e-03 
     ## 
     ## 
     ## ReliefFexpRank 
-    ##         regija leto_izgradnje         stavba       povrsina         poraba 
-    ##   2.381749e-01   1.997263e-01   1.923662e-01   1.503771e-01   7.509449e-02 
-    ##      oblacnost     smer_vetra     temp_zraka        pritisk   temp_rosisca 
-    ##   6.306427e-02   5.719465e-02   5.355028e-02   4.725075e-02   3.080138e-02 
-    ##  hitrost_vetra       padavine 
-    ##   2.324992e-02   9.528363e-05
+    ## leto_izgradnje         stavba       povrsina         regija         poraba 
+    ##   3.890681e-01   3.538168e-01   2.225728e-01   2.009001e-01   1.221790e-01 
+    ##     temp_zraka     smer_vetra        pritisk   temp_rosisca      oblacnost 
+    ##   3.873656e-02   1.769694e-02   1.440180e-02   6.469588e-03  -9.525279e-05 
+    ##       padavine  hitrost_vetra 
+    ##  -5.586294e-04  -1.863089e-02
 
 ``` r
 evalRegrFeatures(poraba ~ ., regSetExt$train)
 ```
 
     ## MSEofMean 
-    ##       povrsina leto_izgradnje     namembnost          mesec      letni_cas 
-    ##      -47987.59     -128189.82     -130093.89     -132622.40     -132992.11 
-    ##   temp_rosisca         stavba     temp_zraka  hitrost_vetra      oblacnost 
-    ##     -133786.24     -135019.76     -135379.17     -135613.97     -135613.97 
-    ##         regija           zima        pritisk     smer_vetra         vikend 
-    ##     -136236.02     -136241.64     -136527.75     -137521.28     -137866.35 
-    ##       padavine 
-    ##     -138671.96 
+    ##   povrsina  letni_cas  oblacnost 
+    ## -0.9014081 -1.4253287 -1.4329784 
     ## 
     ## 
     ## RReliefFexpRank 
-    ##       povrsina leto_izgradnje     namembnost     smer_vetra       padavine 
-    ##   0.4170920980   0.1134296567   0.1016890217   0.0212758701   0.0117818632 
-    ##         vikend         stavba         regija           zima        pritisk 
-    ##   0.0111293115   0.0055137624  -0.0005612576  -0.0120742933  -0.0228798657 
-    ##  hitrost_vetra      oblacnost   temp_rosisca          mesec     temp_zraka 
-    ##  -0.0251266457  -0.0292415364  -0.0316131912  -0.0350674174  -0.0425009603 
-    ##      letni_cas 
-    ##  -0.0918669125
+    ##     povrsina    letni_cas    oblacnost 
+    ##  0.150621379 -0.005415503 -0.009071315
 
 ## Modeliranje
 
@@ -705,7 +710,7 @@ evalRegrFeatures(poraba ~ ., regSetExt$train)
 sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
 ```
 
-    ## [1] 0.4210526
+    ## [1] 0.4824415
 
 #### Odlocitveno drevo
 
@@ -714,18 +719,18 @@ dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
 EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
 ```
 
-    ## [1] "Brier score: 0.799689016497279"
-    ## [1] "Classification accuracy: 0.410526315789474"
-    ## [1] "Information score: 0.0612978306668443"
+    ## [1] "Brier score: 0.710537640877757"
+    ## [1] "Classification accuracy: 0.482441471571906"
+    ## [1] "Information score: 0"
 
 ``` r
 dtExt <- rpart(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.803361278629979"
-    ## [1] "Classification accuracy: 0.452631578947368"
-    ## [1] "Information score: 0.495576684744605"
+    ## [1] "Brier score: 0.950634076175541"
+    ## [1] "Classification accuracy: 0.519648829431438"
+    ## [1] "Information score: 0.58246480113884"
 
 #### Odlocitveno drevo z rezanjem
 
@@ -742,19 +747,29 @@ cpTab <- printcp(dtBase)
     ## rpart(formula = namembnost ~ ., data = classSetBase$train, cp = 0)
     ## 
     ## Variables actually used in tree construction:
-    ## [1] leto_izgradnje poraba         povrsina       stavba        
+    ## [1] leto_izgradnje poraba         povrsina       regija         stavba        
     ## 
-    ## Root node error: 100/241 = 0.41494
+    ## Root node error: 1053/2412 = 0.43657
     ## 
-    ## n= 241 
+    ## n= 2412 
     ## 
-    ##         CP nsplit rel error xerror     xstd
-    ## 1 0.066667      0      1.00   1.00 0.076489
-    ## 2 0.060000      3      0.80   0.96 0.076000
-    ## 3 0.050000      4      0.74   0.92 0.075419
-    ## 4 0.030000      7      0.57   0.83 0.073766
-    ## 5 0.010000      8      0.54   0.78 0.072633
-    ## 6 0.000000      9      0.53   0.80 0.073105
+    ##          CP nsplit rel error   xerror      xstd
+    ## 1  0.104463      0  1.000000 1.000000 0.0231317
+    ## 2  0.093067      1  0.895537 0.889839 0.0227326
+    ## 3  0.063628      2  0.802469 0.802469 0.0222508
+    ## 4  0.039411      3  0.738841 0.754036 0.0219171
+    ## 5  0.037037      5  0.660019 0.515670 0.0194799
+    ## 6  0.036087      6  0.622982 0.474834 0.0189065
+    ## 7  0.032605      7  0.586895 0.427350 0.0181693
+    ## 8  0.025641     14  0.301994 0.334283 0.0164660
+    ## 9  0.024691     15  0.276353 0.297246 0.0156733
+    ## 10 0.018044     16  0.251662 0.254511 0.0146576
+    ## 11 0.017569     17  0.233618 0.169991 0.0122251
+    ## 12 0.017094     22  0.116809 0.163343 0.0120025
+    ## 13 0.012979     23  0.099715 0.105413 0.0097724
+    ## 14 0.011871     27  0.045584 0.075024 0.0083014
+    ## 15 0.008547     29  0.021842 0.036087 0.0058078
+    ## 16 0.000000     30  0.013295 0.011396 0.0032816
 
 ``` r
 row <- which.min(cpTab[,"xerror"])
@@ -763,9 +778,9 @@ dtBase <- prune(dtBase, cp=th)
 EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
 ```
 
-    ## [1] "Brier score: 0.803361278629979"
-    ## [1] "Classification accuracy: 0.452631578947368"
-    ## [1] "Information score: 0.495576684744605"
+    ## [1] "Brier score: 0.957759819795006"
+    ## [1] "Classification accuracy: 0.519648829431438"
+    ## [1] "Information score: 0.583020764473835"
 
 ``` r
 dtExt <- rpart(namembnost ~ ., data=classSetExt$train, cp=0)
@@ -777,19 +792,29 @@ cpTab <- printcp(dtExt)
     ## rpart(formula = namembnost ~ ., data = classSetExt$train, cp = 0)
     ## 
     ## Variables actually used in tree construction:
-    ## [1] leto_izgradnje poraba         povrsina       stavba        
+    ## [1] leto_izgradnje poraba         povrsina       regija         stavba        
     ## 
-    ## Root node error: 100/241 = 0.41494
+    ## Root node error: 1053/2412 = 0.43657
     ## 
-    ## n= 241 
+    ## n= 2412 
     ## 
-    ##         CP nsplit rel error xerror     xstd
-    ## 1 0.066667      0      1.00   1.00 0.076489
-    ## 2 0.060000      3      0.80   0.91 0.075259
-    ## 3 0.050000      4      0.74   0.84 0.073974
-    ## 4 0.030000      7      0.57   0.67 0.069551
-    ## 5 0.010000      8      0.54   0.68 0.069866
-    ## 6 0.000000      9      0.53   0.65 0.068898
+    ##          CP nsplit rel error   xerror      xstd
+    ## 1  0.104463      0  1.000000 1.000000 0.0231317
+    ## 2  0.093067      1  0.895537 0.884141 0.0227057
+    ## 3  0.063628      2  0.802469 0.806268 0.0222749
+    ## 4  0.039411      3  0.738841 0.747388 0.0218674
+    ## 5  0.037037      5  0.660019 0.547009 0.0198852
+    ## 6  0.036087      6  0.622982 0.520418 0.0195432
+    ## 7  0.032605      7  0.586895 0.473884 0.0188926
+    ## 8  0.025641     14  0.301994 0.342830 0.0166387
+    ## 9  0.024691     15  0.276353 0.306743 0.0158838
+    ## 10 0.018044     16  0.251662 0.272555 0.0151009
+    ## 11 0.017569     17  0.233618 0.190883 0.0128907
+    ## 12 0.017094     22  0.116809 0.152896 0.0116408
+    ## 13 0.012979     23  0.099715 0.105413 0.0097724
+    ## 14 0.011871     27  0.045584 0.048433 0.0067099
+    ## 15 0.008547     29  0.021842 0.031339 0.0054180
+    ## 16 0.000000     30  0.013295 0.017094 0.0040140
 
 ``` r
 row <- which.min(cpTab[,"xerror"])
@@ -798,9 +823,9 @@ dtExt <- prune(dtExt, cp=th)
 EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.822617404639108"
-    ## [1] "Classification accuracy: 0.431578947368421"
-    ## [1] "Information score: 0.47931976796757"
+    ## [1] "Brier score: 0.957759819795006"
+    ## [1] "Classification accuracy: 0.519648829431438"
+    ## [1] "Information score: 0.583020764473835"
 
 #### Naivni Bayes
 
@@ -809,18 +834,18 @@ nbBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="bayes")
 EvaluateClassModel(nbBase, classSetBase$train, classSetBase$test)
 ```
 
-    ## [1] "Brier score: 0.863907207678397"
-    ## [1] "Classification accuracy: 0.389473684210526"
-    ## [1] "Information score: 0.411876290108398"
+    ## [1] "Brier score: 0.790209760992438"
+    ## [1] "Classification accuracy: 0.42433110367893"
+    ## [1] "Information score: 0.451920418933791"
 
 ``` r
 nbExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="bayes")
 EvaluateClassModel(nbExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.862279511310445"
-    ## [1] "Classification accuracy: 0.389473684210526"
-    ## [1] "Information score: 0.413485682461334"
+    ## [1] "Brier score: 0.785229865345594"
+    ## [1] "Classification accuracy: 0.427675585284281"
+    ## [1] "Information score: 0.457855777660092"
 
 #### K-bliznjih sosedov
 
@@ -829,18 +854,18 @@ knnBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="knn", kInNN
 EvaluateClassModel(knnBase, classSetBase$train, classSetBase$test)
 ```
 
-    ## [1] "Brier score: 0.813473684210527"
-    ## [1] "Classification accuracy: 0.389473684210526"
-    ## [1] "Information score: 0.494237559603238"
+    ## [1] "Brier score: 0.789866220735777"
+    ## [1] "Classification accuracy: 0.442307692307692"
+    ## [1] "Information score: 0.365209513261892"
 
 ``` r
 knnExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="knn", kInNN=5)
 EvaluateClassModel(knnExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.805894736842106"
-    ## [1] "Classification accuracy: 0.442105263157895"
-    ## [1] "Information score: 0.533952385607779"
+    ## [1] "Brier score: 0.790334448160526"
+    ## [1] "Classification accuracy: 0.442307692307692"
+    ## [1] "Information score: 0.388901411241563"
 
 #### Nakljucni gozd
 
@@ -849,18 +874,18 @@ rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
 EvaluateClassModel(rfBase, classSetBase$train, classSetBase$test);
 ```
 
-    ## [1] "Brier score: 0.724231494736842"
-    ## [1] "Classification accuracy: 0.494736842105263"
-    ## [1] "Information score: 0.49802782847666"
+    ## [1] "Brier score: 0.656205588628747"
+    ## [1] "Classification accuracy: 0.565635451505017"
+    ## [1] "Information score: 0.6030941254262"
 
 ``` r
 rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.729861642105264"
-    ## [1] "Classification accuracy: 0.473684210526316"
-    ## [1] "Information score: 0.505377348445478"
+    ## [1] "Brier score: 0.656645060200652"
+    ## [1] "Classification accuracy: 0.566889632107023"
+    ## [1] "Information score: 0.620174425085266"
 
 ### Regresija
 
@@ -874,8 +899,8 @@ observed <- regSetBase$test$poraba
 EvaluateTrivialRegModel(observed, predicted)
 ```
 
-    ## [1] "Srednja absolutna napaka: 161.41582965713"
-    ## [1] "Srednja kvadratna napaka: 45970.8718472147"
+    ## [1] "Srednja absolutna napaka: 156.129714419125"
+    ## [1] "Srednja kvadratna napaka: 43242.2118842803"
     ## [1] "Relativna srednja absolutna napaka: 1"
     ## [1] "Relativna srednja kvadratna napaka: 1"
 
@@ -885,28 +910,25 @@ EvaluateTrivialRegModel(observed, predicted)
 
 ``` r
 lmBase <- lm(poraba ~ ., regSetBase$train)
-EvaluateRegModel(lmBase, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(lmBase, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 117.063555444631"
-    ## [1] "Srednja kvadratna napaka: 34806.4634352257"
-    ## [1] "Relativna srednja absolutna napaka: 0.725229710699935"
-    ## [1] "Relativna srednja kvadratna napaka: 0.757141686390152"
+    ## [1] "Srednja absolutna napaka: 112.607687408779"
+    ## [1] "Srednja kvadratna napaka: 48270.1016420514"
+    ## [1] "Relativna srednja absolutna napaka: 0.721244433372159"
+    ## [1] "Relativna srednja kvadratna napaka: 1.11627272377339"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-20-1.png)
 
 ``` r
 lmExt <- lm(poraba ~ ., regSetExt$train)
-EvaluateRegModel(lmExt, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(lmExt, regSetExt$train, regSetExt$test)
 ```
 
-    ## Warning in predict.lm(model, test): prediction from a rank-deficient fit may be
-    ## misleading
-
-    ## [1] "Srednja absolutna napaka: 116.750863923369"
-    ## [1] "Srednja kvadratna napaka: 34102.7133328619"
-    ## [1] "Relativna srednja absolutna napaka: 0.723292530672886"
-    ## [1] "Relativna srednja kvadratna napaka: 0.741833077393073"
+    ## [1] "Srednja absolutna napaka: 78.4413880159779"
+    ## [1] "Srednja kvadratna napaka: 24053.470703846"
+    ## [1] "Relativna srednja absolutna napaka: 0.525073457394758"
+    ## [1] "Relativna srednja kvadratna napaka: 0.397039336657929"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-20-2.png)
 
@@ -914,25 +936,25 @@ EvaluateRegModel(lmExt, regSetExt$train, regSetExt$test)
 
 ``` r
 baseModel <- rpart(poraba ~ ., data=regSetBase$train)
-EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 98.3704076226989"
-    ## [1] "Srednja kvadratna napaka: 36473.3706670525"
-    ## [1] "Relativna srednja absolutna napaka: 0.60942230902416"
-    ## [1] "Relativna srednja kvadratna napaka: 0.793401760755651"
+    ## [1] "Srednja absolutna napaka: 131.411079679798"
+    ## [1] "Srednja kvadratna napaka: 90642.5989139421"
+    ## [1] "Relativna srednja absolutna napaka: 0.841678857664654"
+    ## [1] "Relativna srednja kvadratna napaka: 2.09616009367211"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-21-1.png)
 
 ``` r
 extModel <- rpart(poraba ~ ., data=regSetExt$train)
-EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 92.7216167030922"
-    ## [1] "Srednja kvadratna napaka: 26414.3560583682"
-    ## [1] "Relativna srednja absolutna napaka: 0.5744270366794"
-    ## [1] "Relativna srednja kvadratna napaka: 0.574588973342879"
+    ## [1] "Srednja absolutna napaka: 92.2984030060386"
+    ## [1] "Srednja kvadratna napaka: 32046.0800221231"
+    ## [1] "Relativna srednja absolutna napaka: 0.617829984963089"
+    ## [1] "Relativna srednja kvadratna napaka: 0.528969582441017"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-21-2.png)
 
@@ -940,25 +962,25 @@ EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
 
 ``` r
 baseModel <- randomForest(poraba ~ ., data=regSetBase$train)
-EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 89.1477740789474"
-    ## [1] "Srednja kvadratna napaka: 17167.5843761133"
-    ## [1] "Relativna srednja absolutna napaka: 0.552286440978618"
-    ## [1] "Relativna srednja kvadratna napaka: 0.373444829003248"
+    ## [1] "Srednja absolutna napaka: 95.0150252577187"
+    ## [1] "Srednja kvadratna napaka: 25439.0674417027"
+    ## [1] "Relativna srednja absolutna napaka: 0.60856465158614"
+    ## [1] "Relativna srednja kvadratna napaka: 0.588292465468228"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 ``` r
 extModel <- randomForest(poraba ~ ., data=regSetExt$train)
-EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 95.8406227039265"
-    ## [1] "Srednja kvadratna napaka: 17530.6476380049"
-    ## [1] "Relativna srednja absolutna napaka: 0.59374983796512"
-    ## [1] "Relativna srednja kvadratna napaka: 0.381342509584512"
+    ## [1] "Srednja absolutna napaka: 83.0135138212335"
+    ## [1] "Srednja kvadratna napaka: 24167.6866971511"
+    ## [1] "Relativna srednja absolutna napaka: 0.555678498495259"
+    ## [1] "Relativna srednja kvadratna napaka: 0.398924646382082"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-22-2.png)
 
@@ -969,18 +991,18 @@ baseModel <- nnet(poraba ~ ., regSetBase$train, size=5, decay=0.001, maxit=10000
 ```
 
     ## # weights:  91
-    ## initial  value 46943168.629983 
-    ## final  value 23581011.268310 
+    ## initial  value 370406727.018620 
+    ## final  value 170275151.850343 
     ## converged
 
 ``` r
-EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 121.05793716675"
-    ## [1] "Srednja kvadratna napaka: 35825.0248094938"
-    ## [1] "Relativna srednja absolutna napaka: 0.749975621498173"
-    ## [1] "Relativna srednja kvadratna napaka: 0.779298355022701"
+    ## [1] "Srednja absolutna napaka: 127.106043095117"
+    ## [1] "Srednja kvadratna napaka: 36126.050731913"
+    ## [1] "Relativna srednja absolutna napaka: 0.814105396708181"
+    ## [1] "Relativna srednja kvadratna napaka: 0.835434848443671"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
@@ -988,33 +1010,181 @@ EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
 extModel <- nnet(poraba ~ ., regSetExt$train, size=5, decay=0.001, maxit=10000, linout=T)
 ```
 
-    ## # weights:  166
-    ## initial  value 46863893.041450 
-    ## iter  10 value 23873985.833484
-    ## iter  20 value 14007830.618434
-    ## iter  30 value 13209557.591093
-    ## iter  40 value 12429847.516701
-    ## iter  50 value 5857918.826374
-    ## iter  60 value 5723234.569132
-    ## iter  70 value 5694467.548654
-    ## iter  80 value 5686735.980477
-    ## iter  90 value 5686723.496030
-    ## iter 100 value 5599787.445854
-    ## iter 110 value 5561449.960043
-    ## iter 120 value 5550253.299624
-    ## iter 130 value 5541881.503333
-    ## iter 140 value 5538719.027791
-    ## iter 150 value 5537987.124849
-    ## final  value 5537985.526931 
+    ## # weights:  36
+    ## initial  value 50706.786591 
+    ## iter  10 value 3193.440717
+    ## iter  20 value 2216.064906
+    ## iter  30 value 1623.194558
+    ## iter  40 value 1477.860293
+    ## iter  50 value 1448.831703
+    ## iter  60 value 1439.166441
+    ## iter  70 value 1436.167244
+    ## iter  80 value 1434.104367
+    ## iter  90 value 1432.153715
+    ## iter 100 value 1431.834668
+    ## iter 110 value 1430.869607
+    ## iter 120 value 1430.259632
+    ## iter 130 value 1429.825904
+    ## iter 140 value 1429.523048
+    ## iter 150 value 1428.807656
+    ## iter 160 value 1426.087846
+    ## iter 170 value 1425.186949
+    ## iter 180 value 1423.700117
+    ## iter 190 value 1422.186204
+    ## iter 200 value 1421.070882
+    ## iter 210 value 1420.272583
+    ## iter 220 value 1419.683786
+    ## iter 230 value 1419.583470
+    ## iter 240 value 1419.535165
+    ## iter 250 value 1419.487772
+    ## iter 260 value 1419.182199
+    ## iter 270 value 1418.677756
+    ## iter 280 value 1418.320332
+    ## iter 290 value 1417.610299
+    ## iter 300 value 1416.729663
+    ## iter 310 value 1416.267778
+    ## iter 320 value 1416.192507
+    ## iter 330 value 1415.416290
+    ## iter 340 value 1414.648789
+    ## iter 350 value 1414.498248
+    ## iter 360 value 1414.350164
+    ## iter 370 value 1414.307486
+    ## iter 380 value 1414.285791
+    ## final  value 1414.283091 
     ## converged
 
 ``` r
-EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 115.633198763589"
-    ## [1] "Srednja kvadratna napaka: 58255.0579527194"
-    ## [1] "Relativna srednja absolutna napaka: 0.716368394656275"
-    ## [1] "Relativna srednja kvadratna napaka: 1.2672167312017"
+    ## [1] "Srednja absolutna napaka: 87.7310968229739"
+    ## [1] "Srednja kvadratna napaka: 39670.7242956365"
+    ## [1] "Relativna srednja absolutna napaka: 0.587257205602862"
+    ## [1] "Relativna srednja kvadratna napaka: 0.654826002160288"
 
 ![](README_files/figure-markdown_github/unnamed-chunk-23-2.png)
+
+## Izboljsava modelov
+
+### Klasifikacija
+
+``` r
+runWrapper(namembnost ~ ., classSetBase$train)
+```
+
+    ## formula to evaluate: namembnost ~ datum ...
+    ## formula to evaluate: namembnost ~ regija ...
+    ## formula to evaluate: namembnost ~ stavba ...
+    ## formula to evaluate: namembnost ~ povrsina ...
+    ## formula to evaluate: namembnost ~ leto_izgradnje ...
+    ## formula to evaluate: namembnost ~ temp_zraka ...
+    ## formula to evaluate: namembnost ~ temp_rosisca ...
+    ## formula to evaluate: namembnost ~ oblacnost ...
+    ## formula to evaluate: namembnost ~ padavine ...
+    ## formula to evaluate: namembnost ~ pritisk ...
+    ## formula to evaluate: namembnost ~ smer_vetra ...
+    ## formula to evaluate: namembnost ~ hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ poraba ...
+    ## selected attribute:  povrsina 
+    ## formula to evaluate: namembnost ~ povrsina + datum ...
+    ## formula to evaluate: namembnost ~ povrsina + regija ...
+    ## formula to evaluate: namembnost ~ povrsina + stavba ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje ...
+    ## formula to evaluate: namembnost ~ povrsina + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + temp_rosisca ...
+    ## formula to evaluate: namembnost ~ povrsina + oblacnost ...
+    ## formula to evaluate: namembnost ~ povrsina + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + poraba ...
+    ## selected attribute:  leto_izgradnje 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + regija ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + stavba ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + temp_rosisca ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + oblacnost ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + poraba ...
+    ## selected attribute:  datum 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + regija ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + stavba ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + oblacnost ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + poraba ...
+    ## selected attribute:  temp_rosisca 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + regija ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + stavba ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + poraba ...
+    ## selected attribute:  oblacnost 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + regija ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + poraba ...
+    ## selected attribute:  stavba 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + poraba ...
+    ## selected attribute:  regija 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + poraba ...
+    ## selected attribute:  temp_zraka 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + poraba ...
+    ## selected attribute:  padavine 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + poraba ...
+    ## selected attribute:  pritisk 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk + smer_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk + poraba ...
+    ## selected attribute:  smer_vetra 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk + smer_vetra + hitrost_vetra ...
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk + smer_vetra + poraba ...
+    ## selected attribute:  hitrost_vetra 
+    ## formula to evaluate: namembnost ~ povrsina + leto_izgradnje + datum + temp_rosisca + oblacnost + stavba + regija + temp_zraka + padavine + pritisk + smer_vetra + hitrost_vetra + poraba ...
+    ## selected attribute:  poraba 
+    ## best model: estimated error =  0.003732725 , selected feature subset =  namembnost ~ povrsina + leto_izgradnje
+
+``` r
+dtBase <- rpart(namembnost ~ povrsina + leto_izgradnje + stavba + datum + regija + temp_zraka + temp_rosisca + oblacnost, data=classSetBase$train)
+EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
+```
+
+    ## [1] "Brier score: 0.963653660864007"
+    ## [1] "Classification accuracy: 0.514632107023411"
+    ## [1] "Information score: 0.599764290298839"
+
+### Regresija

@@ -41,8 +41,8 @@ train <- read.table("trainset.txt", header=T, sep=",")
 test <- read.table("testset.txt", header=T, sep=",")
 
 # zmanjsamo mnozici za potrebo razvoja
-trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.01), replace=T)
-testSel <- sample(1:nrow(test), as.integer(nrow(test) * 0.004), replace=T)
+trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.1), replace=T)
+testSel <- sample(1:nrow(test), as.integer(nrow(test) * 0.1), replace=T)
 train <- train[trainSel,]
 test <- test[testSel,]
 
@@ -184,10 +184,27 @@ regSetExt <- list(train=train, test=test)
 ExtendRegSet <- function (set)
 {
   set$letni_cas <- as.factor(ToSeason(set$datum))
-  set$mesec <- as.factor(ToMonth(set$datum))
-  set$zima <- as.factor(IsWinter(set$datum))
-  set$vikend <- as.factor(IsWeekend(set$datum))
+  #set$mesec <- as.factor(ToMonth(set$datum))
+  #set$zima <- as.factor(IsWinter(set$datum))
+  #set$vikend <- as.factor(IsWeekend(set$datum))
+  
   set$datum <- NULL
+  set$stavba <- NULL
+  set$temp_rosisca <- NULL
+  set$padavine <- NULL
+  set$pritisk <- NULL
+  set$smer_vetra <- NULL
+  set$hitrost_vetra <- NULL
+  
+  set$leto_izgradnje <- NULL
+  set$regija <- NULL
+  set$namembnost <- NULL
+  set$temp_zraka <- NULL
+  
+  set$oblacnost <- log1p(set$oblacnost)
+  set$poraba <- log1p(set$poraba)
+  set$povrsina <- log1p(set$povrsina)
+  
   set
 }
 
@@ -279,7 +296,6 @@ rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
 ```
 
-
 ### Regresija
 
 
@@ -296,20 +312,20 @@ EvaluateTrivialRegModel(observed, predicted)
 #### Linearna regresija
 ```{R}
 lmBase <- lm(poraba ~ ., regSetBase$train)
-EvaluateRegModel(lmBase, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(lmBase, regSetBase$train, regSetBase$test)
 
 lmExt <- lm(poraba ~ ., regSetExt$train)
-EvaluateRegModel(lmExt, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(lmExt, regSetExt$train, regSetExt$test)
 ```
 
 #### Regresijsko drevo
 
 ```{R}
 baseModel <- rpart(poraba ~ ., data=regSetBase$train)
-EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 
 extModel <- rpart(poraba ~ ., data=regSetExt$train)
-EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
 
@@ -317,10 +333,10 @@ EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
 
 ```{R}
 baseModel <- randomForest(poraba ~ ., data=regSetBase$train)
-EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 
 extModel <- randomForest(poraba ~ ., data=regSetExt$train)
-EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
 
@@ -328,8 +344,21 @@ EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
 
 ```{R}
 baseModel <- nnet(poraba ~ ., regSetBase$train, size=5, decay=0.001, maxit=10000, linout=T)
-EvaluateRegModel(baseModel, regSetBase$train, regSetBase$test)
+EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 
 extModel <- nnet(poraba ~ ., regSetExt$train, size=5, decay=0.001, maxit=10000, linout=T)
-EvaluateRegModel(extModel, regSetExt$train, regSetExt$test)
+EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
+
+
+## Izboljsava modelov
+
+### Klasifikacija
+```{R}
+runWrapper(namembnost ~ ., classSetBase$train)
+
+dtBase <- rpart(namembnost ~ povrsina + leto_izgradnje + stavba + datum + regija + temp_zraka + temp_rosisca + oblacnost, data=classSetBase$train)
+EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
+```
+
+### Regresija

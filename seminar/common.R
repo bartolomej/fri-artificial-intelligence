@@ -137,11 +137,22 @@ RMSE <- function(obs, pred, mean.val)
   sum((obs - pred)^2)/sum((obs - mean.val)^2)
 }
 
-EvaluateRegModel <- function(model, train, test)
+EvaluateRegBaseModel <- function(model, train, test)
 {
   predicted <- predict(model, test)
   observed <- test$poraba
-  
+  EvaluateRegModel(observed, predicted, train)
+}
+
+EvaluateRegExtModel <- function(model, train, test)
+{
+  predicted <- expm1(predict(model, test))
+  observed <- expm1(test$poraba)
+  EvaluateRegModel(observed, predicted, train)
+}
+
+EvaluateRegModel <- function(observed, predicted, train)
+{
   mae <- MAE(observed, predicted)
   print(paste("Srednja absolutna napaka:", mae))
   
@@ -178,3 +189,95 @@ EvaluateTrivialRegModel <- function(observed, predicted)
   plot(observed)
   points(predicted, col="red")
 }
+
+# IZBOLJSAVA REGRESIJSKEGA MODELA Z METODO OVOJNICE
+
+wrapper <- function(formula, dataset, trainfunc, predictfunc, evalfunc, cvfolds = 10)
+{
+  df <- model.frame(formula, dataset)
+  n <- nrow(df)
+  
+  cur.formula <- paste(names(df)[1]," ~ ", sep = "")
+  candidates <- names(df)[-1]
+  
+  global.best <- Inf
+  global.formula <- cur.formula
+  
+  while(length(candidates))
+  {
+    selected.att <- 1
+    local.best <- Inf
+    
+    bucket.id <- rep(1:cvfolds, length.out=n)
+    s <- sample(1:n, n, FALSE)
+    bucket.id <- bucket.id[s]
+    
+    for (i in 1:length(candidates))
+    {
+      local.formula <- paste(cur.formula, candidates[i], sep = "")
+      cat("formula to evaluate:", local.formula, "...\n")
+      flush.console()
+      
+      cv.results <- vector()
+      for (j in 1:cvfolds)
+      {	
+        sel <- bucket.id == j
+        
+        model <- trainfunc(as.formula(local.formula), df[!sel,])
+        predicted <- predictfunc(model, df[sel,])
+        observed <- df[sel,1]
+        trained <- df[!sel,1]
+        
+        cv.results[j] <- evalfunc(predicted, observed, trained) 
+      }
+      
+      local.result <- mean(cv.results)
+      
+      if (local.result < local.best)
+      {
+        local.best <- local.result
+        selected.att <- i
+      }
+    }
+    
+    cat("selected attribute: ", candidates[selected.att], "\n")
+    
+    flush.console()
+    
+    if (local.best < global.best)
+    {
+      global.formula <- paste(cur.formula, candidates[selected.att], sep = "")
+      global.best <- local.best
+    }
+    
+    cur.formula <- paste(cur.formula, candidates[selected.att], " + ", sep = "")
+    candidates <- candidates[-selected.att]
+  }
+  
+  cat("best model: estimated error = ", global.best,", selected feature subset = ", global.formula, "\n")
+}
+
+runWrapper <- function (formula, traindata)
+{
+  myTrainFunc <- function(formula, traindata)
+  {
+    rpart(formula, traindata)   
+  }
+  
+  # Funkcija za pridobivanje napovedi modela (razredi)
+  myPredictFunc <- function(model, testdata)
+  {
+    predict(model, testdata, type="class")
+  }
+  
+  # Atribute lahko izberemo glede na klasifikacijsko tocnost modela
+  myEvalFunc <- function(predicted, observed, trained)
+  {
+    # vracamo napako modela, saj wrapper minimizira vrednost ocene
+    1.0 - mean(observed == predicted)   
+  }
+  
+  set.seed(0)
+  wrapper(formula, traindata, myTrainFunc, myPredictFunc, myEvalFunc, cvfolds=10)
+}
+
