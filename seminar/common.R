@@ -381,4 +381,3 @@ drawCharts <- function (data)
   hist(data$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
   hist(data$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 }
-
