@@ -90,22 +90,24 @@ InfScore <- function(trainClass, testClass, predMat)
   result / nrow(predMat)
 }
 
-EvaluateClassModel <- function (model, train, test)
+EvaluateClassModel <- function (model, train, test, log=F)
 {
   predictedMat <- predict(model, test, type="prob")
   observedMat <- class.ind(test$namembnost)
   
   observed <- test$namembnost
   predicted <- predict(model, test, type="class")
-  
   brier <- BrierScore(observedMat, predictedMat)
-  print(paste("Brier score:", brier))
-  
   ca <- CA(observed, predicted)
-  print(paste("Classification accuracy:", ca))
-  
   infGain <- InfScore(train$namembnost, test$namembnost, predictedMat)
-  print(paste("Information score:", infGain))
+  
+  if (log) {
+    print(paste("Brier score:", brier))
+    print(paste("Classification accuracy:", ca))
+    print(paste("Information score:", infGain))
+  }
+  
+  data.frame(brier=brier, ca=ca, infGain=infGain)
 }
 
 EvaluateClass <- function (train, test, predictedMat, observedMat)
@@ -153,39 +155,40 @@ RMSE <- function(obs, pred, mean.val)
   sum((obs - pred)^2)/sum((obs - mean.val)^2)
 }
 
-EvaluateRegBaseModel <- function(model, train, test)
+EvaluateRegBaseModel <- function(model, train, test, log=T)
 {
   predicted <- predict(model, test)
   observed <- test$poraba
-  EvaluateRegModel(observed, predicted, train)
+  EvaluateRegModel(observed, predicted, train, log)
 }
 
-EvaluateRegExtModel <- function(model, train, test)
+EvaluateRegExtModel <- function(model, train, test, drawGraph=T, log=T)
 {
   predicted <- expm1(predict(model, test))
   observed <- expm1(test$poraba)
-  EvaluateRegModel(observed, predicted, train)
+  EvaluateRegModel(observed, predicted, train, drawGraph, log)
 }
 
-EvaluateRegModel <- function(observed, predicted, train)
+EvaluateRegModel <- function(observed, predicted, train, drawGraph=T, log=T)
 {
   mae <- MAE(observed, predicted)
-  print(paste("Srednja absolutna napaka:", mae))
-  
   mse <- MSE(observed, predicted)
-  print(paste("Srednja kvadratna napaka:", mse))
-  
   meanValue <- mean(train$poraba)
-  trivialPred <- rep(meanValue, nrow(test))
-  
   rmae <- RMAE(observed, predicted, meanValue)
-  print(paste("Relativna srednja absolutna napaka:", rmae))
-  
   rmse <- RMSE(observed, predicted, meanValue)
-  print(paste("Relativna srednja kvadratna napaka:", rmse))
   
-  plot(observed)
-  points(predicted, col="red")
+  if (log) {
+    print(paste("Srednja absolutna napaka:", mae))
+    print(paste("Srednja kvadratna napaka:", mse))
+    print(paste("Relativna srednja absolutna napaka:", rmae))
+    print(paste("Relativna srednja kvadratna napaka:", rmse))
+  }
+  
+  if (drawGraph) {
+    plot(observed)
+    points(predicted, col="red")
+  }
+  data.frame(mae=mae, mse=mse, rmae=rmae, rmse)
 }
 
 EvaluateTrivialRegModel <- function(observed, predicted)
@@ -231,8 +234,8 @@ wrapper <- function(formula, dataset, trainfunc, predictfunc, evalfunc, cvfolds 
     for (i in 1:length(candidates))
     {
       local.formula <- paste(cur.formula, candidates[i], sep = "")
-      cat("formula to evaluate:", local.formula, "...\n")
-      flush.console()
+      # cat("formula to evaluate:", local.formula, "...\n")
+      # flush.console()
       
       cv.results <- vector()
       for (j in 1:cvfolds)
@@ -256,9 +259,8 @@ wrapper <- function(formula, dataset, trainfunc, predictfunc, evalfunc, cvfolds 
       }
     }
     
-    cat("selected attribute: ", candidates[selected.att], "\n")
-    
-    flush.console()
+    # cat("selected attribute: ", candidates[selected.att], "\n")
+    # flush.console()
     
     if (local.best < global.best)
     {
@@ -328,6 +330,7 @@ runWeightedVoting <- function (predProb, observed)
 
 runClassification <- function (formula, train, test)
 {
+  
   calcCA <- function(label, model) 
   {
     predicted <- predict(model, test, type="class")
@@ -337,7 +340,8 @@ runClassification <- function (formula, train, test)
   }
   
   # trivialni klasifikator
-  trivialCa <- sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
+  highestOccurance <- names(table(train$namembnost))[1]
+  trivialCa <- sum(test$namembnost == highestOccurance) / length(test$namembnost)
   print(paste("Trivial classification accuracy:", trivialCa))
   
   # odlocitveno drevo
@@ -375,4 +379,22 @@ runRegression <- function(formula, train, test)
   
   extModel <- randomForest(formula, data=train)
   EvaluateRegExtModel(extModel, train, test)
+}
+
+# EVALUACIJA PO MESECIH
+
+drawClassEvaluationGraph <- function (brier, ca, infGain)
+{
+  months <- c('Jan','Feb','Mar','Apr','Maj','Jun','Jul','Avg','Sep','Okt','Nov')
+  evalData <- data.frame(brier,ca,infGain,months)
+  evalData$mesec <- factor(evalData$months, levels = evalData$months)
+  ggplot(evalData, aes(x=months,group = 1)) + geom_line(aes(y=brier, fg="BRIER"), lwd=1.5) + geom_line(aes(y=ca, fg="CA"), lwd=1.5) +  geom_line(aes(y=infGain, fg="INF GAIN"), lwd=1.5)
+}
+
+drawRegrEvaluationGraph <- function (rmse, rmae)
+{
+  months <- c('Jan','Feb','Mar','Apr','Maj','Jun','Jul','Avg','Sep','Okt','Nov')
+  evalData <- data.frame(rmse,rmae,months)
+  evalData$mesec <- factor(evalData$months, levels = evalData$months)
+  ggplot(evalData, aes(x=months,group = 1)) +  geom_line(aes(y=rmse, fg="RMSE"), lwd=1.5) +  geom_line(aes(y=rmae, fg="RMAE"), lwd=1.5)
 }

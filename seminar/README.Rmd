@@ -1,11 +1,22 @@
 ---
-output: 
+title: "Seminarska naloga 1 (Umetna Inteligence 2021-2022)"
+author: "Bartolomej Kozorog (63200152)"
+date: "December 5, 2021"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    highlight: tango
+    df_print: kable
   md_document:
     variant: markdown_github
-    toc: true
+    toc: yes
+  html_document:
+    toc: yes
+    df_print: paged
+    number_sections: true
+    toc_depth: 3
 ---
-
-# Seminarska naloga
 
 Cilj seminarske naloge je uporabiti metode strojnega učenja za gradnjo modelov za napovedovanje
 porabe električne energije (regresijski problem) in namembnosti stavbe (klasifikacijski problem),
@@ -45,20 +56,11 @@ Opazimo, da imamo 3 atribute tipa "character": `datum`, `regija` in `namembnost`
 ```{R}
 train <- read.table("trainset.txt", header=T, sep=",")
 test <- read.table("testset.txt", header=T, sep=",")
-allData <- rbind(test, train)
-
-# zmanjsamo mnozici za potrebo razvoja
-trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.1), replace=T)
-testSel <- sample(1:nrow(test), as.integer(nrow(test) * 0.1), replace=T)
-train <- train[trainSel,]
-test <- test[testSel,]
-
-summary(train)
 
 train <- Factorize(train)
 test <- Factorize(test)
 
-summary(train)
+allData <- rbind(test, train)
 ```
 
 ### Izris grafov
@@ -81,6 +83,9 @@ hist(allData$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti
 ```
 
 #### Namembnost in regija
+
+
+#### Namembnost stavb glede na regijo
 
 *Ugotovitve:*
 - priblizno polovica stavb sluzi izobrazevalnemu namenu
@@ -145,7 +150,6 @@ ggcorrplot(r,
 
 
 ## Priprava atributov
-
 
 ### Pomozne metode
 
@@ -256,11 +260,10 @@ evalClassFeatures(namembnost ~ ., classSetExt$train)
 evalRegrFeatures(poraba ~ ., regSetExt$train)
 ```
 
-## Modeliranje
 
-### Klasifikacija
+## Klasifikacija
 
-#### Vecinski klasifikator
+### Vecinski klasifikator
 
 Vecinski klasifikator uvrsti vsak primer v razred ki se najveckrat pojavi. 
 Ta klasifikator bo predstavljal spodnjo mejo kvalitete ucnih modelov.
@@ -269,7 +272,7 @@ Ta klasifikator bo predstavljal spodnjo mejo kvalitete ucnih modelov.
 sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
 ```
 
-#### Odlocitveno drevo
+### Odlocitveno drevo
 
 ```{R}
 # osnovna mnozica atributov
@@ -281,7 +284,7 @@ dtExt <- rpart(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
 ```
 
-#### Odlocitveno drevo z rezanjem
+### Odlocitveno drevo z rezanjem
 
 Izberemo vrednost parametra cp, ki ustreza minimalni napaki internega presnega preverjanja.
 ```{R}
@@ -300,7 +303,7 @@ dtExt <- prune(dtExt, cp=th)
 EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
 ```
 
-#### Naivni Bayes
+### Naivni Bayes
 
 ```{r}
 nbBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="bayes")
@@ -310,7 +313,7 @@ nbExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="bayes")
 EvaluateClassModel(nbExt, classSetExt$train, classSetExt$test)
 ```
 
-#### K-bliznjih sosedov
+### K-bliznjih sosedov
 
 ```{R}
 knnBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="knn", kInNN=5)
@@ -321,7 +324,7 @@ EvaluateClassModel(knnExt, classSetExt$train, classSetExt$test)
 ```
 
 
-#### Nakljucni gozd
+### Nakljucni gozd
 
 ```{R}
 rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
@@ -331,10 +334,10 @@ rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
 ```
 
-### Regresija
+## Regresija
 
 
-#### Trivialni model
+### Trivialni model
 Trivialni model vedno vraca povprecno vrednost ciljne spremenljivke, glede na vse ucne primere.
 Ta model bo predstavljal spodnjo mejo kvalitete ucnih modelov.
 ```{R}
@@ -345,7 +348,7 @@ observed <- regSetBase$test$poraba
 EvaluateTrivialRegModel(observed, predicted)
 ```
 
-#### Linearna regresija
+### Linearna regresija
 
 ```{R}
 # osnovna mnozica atributov
@@ -370,7 +373,7 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
 
-#### Nakljucni gozd
+### Nakljucni gozd
 
 ```{R}
 # osnovna mnozica atributov
@@ -383,7 +386,7 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
 
-#### Nevronske mreze
+### Nevronske mreze
 
 ```{R}
 # osnovna mnozica atributov
@@ -574,6 +577,77 @@ runRegression(poraba ~ ., regVzhodnaTrain, regVzhodnaTest)
 runRegression(poraba ~ ., regZahodnaTrain, regZahodnaTest)
 ```
 
-### Ugotovitve
 
-Opazimo, da je klasifikacijska in regresijska napoved obcutno uspesnejsa za primere iz podmnozice podatkov z vzhodno regijo.
+## Evalvacija po mesecih
+
+```{R}
+regData <- ExtendRegSet(allData)
+classData <- ExtendClassSet(allData)
+classData$mesec <- as.factor(ToMonth(allData$datum))
+
+regDataByMonth = list()
+classDataByMonth = list()
+
+for (i in 1:12) 
+{
+  regDataByMonth[[i]] <- regData[regData$mesec==i,]
+  classDataByMonth[[i]] <- classData[classData$mesec==i,]
+  classDataByMonth[[i]]$mesec <- NULL
+  regDataByMonth[[i]]$mesec <- NULL
+  regDataByMonth[[i]]$letni_cas <- NULL
+  regDataByMonth[[i]]$zima <- NULL
+}
+
+brier <- vector()
+ca <- vector()
+infGain <- vector()
+
+mae <- vector()
+mse <- vector()
+rmse <- vector()
+rmae <- vector()
+
+
+for (i in 1:11) 
+{
+  regTrain <- do.call("rbind", regDataByMonth[1:i])
+  regTest <- regDataByMonth[[i + 1]]
+  
+  classTrain <- do.call("rbind", classDataByMonth[1:i])
+  classTest <- classDataByMonth[[i + 1]]
+
+  dt <- rpart(namembnost ~ ., data=classTrain)
+  score <- EvaluateClassModel(dt, classTrain, classTest, F)
+  brier[i] <- score$brier
+  ca[i] <- score$ca
+  infGain[i] <- score$infGain
+  
+  lmExt <- lm(poraba ~ ., regTrain)
+  score <- EvaluateRegExtModel(lmExt, regTrain, regTest, F, F)
+  mae[i] <- score$mae
+  mse[i] <- score$mse
+  rmse[i] <- score$rmse
+  rmae[i] <- score$rmae
+}
+```
+
+### Ocene klasifikacije
+
+```{r}
+drawClassEvaluationGraph(brier, ca, infGain)
+```
+
+### Ocene regresije
+
+```{r}
+drawRegrEvaluationGraph(rmse, rmae)
+```
+
+
+## Zakljucek
+
+V tej seminarski nalogi sem zgradil in evaluiral nekaj razlicnih klasifikacijskih in regresijskih modelov.
+
+Pri klasifikaciji je bil najbolj kvaliteten model nakljucnega gozda, najslabsi pa naivni bayesov klasifikator. Medtem ko je bila pri regresiji najboljsa metoda linearne regresija, najslabsa pa metoda nevronskih mrez.
+
+Pri locenem ucenju glede na regije smo opazili, da je klasifikacijska in regresijska napoved obcutno uspesnejsa za primere iz podmnozice podatkov z vzhodno regijo. Eden izmed moznih razlogov za to je verjetno tudi dejstvo, da so stavbe za izobrazevalne namene vecinski razred, ter da imajo stavbe z vzhodno lego imajo za skoraj 13% vec stavb za izobrazevalne namene kot stavbe z zahodno lego.
