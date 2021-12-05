@@ -41,6 +41,30 @@ library(randomForest)
     ##     margin
 
 ``` r
+library(ipred) # bagging
+library(adabag) # boosting
+```
+
+    ## Loading required package: caret
+
+    ## Loading required package: lattice
+
+    ## Loading required package: foreach
+
+    ## Loading required package: doParallel
+
+    ## Loading required package: iterators
+
+    ## Loading required package: parallel
+
+    ## 
+    ## Attaching package: 'adabag'
+
+    ## The following object is masked from 'package:ipred':
+    ## 
+    ##     bagging
+
+``` r
 source("./common.R") # pomozne metode
 
 set.seed(0) # nastavimo random seed
@@ -1068,6 +1092,11 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 
 ### Klasifikacija
 
+#### Metoda ovojnice
+
+Izboljsava klasifikacijskega modela z izbiro optimalne podmnozice
+atributov, ki minimizira doloceno oceno.
+
 ``` r
 runWrapper(namembnost ~ ., classSetBase$train)
 ```
@@ -1187,4 +1216,124 @@ EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
     ## [1] "Classification accuracy: 0.514632107023411"
     ## [1] "Information score: 0.599764290298839"
 
-### Regresija
+#### Glasovanje
+
+Zgradimo modele z osnovno in popravljeno mnozico atributov:
+
+``` r
+dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
+knnBase <- CoreModel(namembnost ~ ., data=classSetBase$train, model="knn", kInNN=5)
+rfBase <- randomForest(namembnost ~ ., data=classSetBase$train)
+
+dtExt <- rpart(namembnost ~ pritisk, data=classSetExt$train)
+knnExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="knn", kInNN=5)
+rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
+```
+
+Glasovanje z osnovno mnozico atributov:
+
+``` r
+predDtBase <- predict(dtBase, classSetBase$test, type="class")
+predKnnBase <- predict(knnBase, classSetBase$test, type="class")
+predRfBase <- predict(rfBase, classSetBase$test, type="class")
+
+modelsDf <- data.frame(
+  predDtBase,
+  predKnnBase,
+  predRfBase
+)
+
+runVoting(modelsDf, classSetBase$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.5"
+
+Glasovanje z popravljeno mnozico atributov:
+
+``` r
+predDtExt <- predict(dtExt, classSetExt$test, type="class")
+predKnnExt <- predict(knnExt, classSetExt$test, type="class")
+predRfExt <- predict(rfExt, classSetExt$test, type="class")
+
+modelsDf <- data.frame(
+  predDtExt,
+  predKnnExt,
+  predRfExt
+)
+
+runVoting(modelsDf, classSetExt$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.508361204013378"
+
+#### Utezeno glasovanje
+
+Glasovanje z osnovno mnozico atributov:
+
+``` r
+predDtBase <- predict(dtBase, classSetBase$test, type="prob")
+predKnnBase <- predict(knnBase, classSetBase$test, type="prob")
+predRfBase <- predict(rfBase, classSetBase$test, type="prob")
+runWeightedVoting(predDtBase + predKnnBase + predRfBase, classSetBase$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.523829431438127"
+
+Glasovanje z popravljeno mnozico atributov:
+
+``` r
+predDtExt <- predict(dtExt, classSetExt$test, type="prob")
+predKnnExt <- predict(knnExt, classSetExt$test, type="prob")
+predRfExt <- predict(rfExt, classSetExt$test, type="prob")
+runWeightedVoting(predDtExt + predKnnExt + predRfExt, classSetExt$test$namembnost)
+```
+
+    ## [1] "Classification accuracy: 0.528846153846154"
+
+#### Bagging
+
+Bagging z osnovno mnozico atributov:
+
+``` r
+bag <- bagging(namembnost ~ ., classSetBase$train, nbagg=30)
+predictions <- predict(bag, classSetBase$test)
+ca <- CA(classSetBase$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.512959866220736"
+
+Bagging z popravljeno mnozico atributov:
+
+``` r
+bag <- bagging(namembnost ~ ., classSetExt$train, nbagg=30)
+predictions <- predict(bag, classSetExt$test)
+ca <- CA(classSetExt$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.53804347826087"
+
+#### Boosting
+
+Boosting z osnovno mnozico atributov:
+
+``` r
+bm <- boosting(namembnost ~ ., classSetBase$train, mfinal=100)
+predictions <- predict(bm, classSetBase$test)
+ca <- CA(classSetBase$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.492892976588629"
+
+Boosting z popravljeno mnozico atributov:
+
+``` r
+bm <- boosting(namembnost ~ ., classSetExt$train, mfinal=100)
+predictions <- predict(bm, classSetExt$test)
+ca <- CA(classSetExt$test$namembnost, predictions$class)
+print(paste("Classification accuracy:", ca))
+```
+
+    ## [1] "Classification accuracy: 0.492892976588629"

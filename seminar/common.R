@@ -108,6 +108,22 @@ EvaluateClassModel <- function (model, train, test)
   print(paste("Information score:", infGain))
 }
 
+EvaluateClass <- function (model, train, test, predictedMat, observedMat)
+{
+  observed <- test$namembnost
+  predicted <- predict(model, test, type="class")
+  
+  brier <- BrierScore(observedMat, predictedMat)
+  print(paste("Brier score:", brier))
+  
+  ca <- CA(observed, predicted)
+  print(paste("Classification accuracy:", ca))
+  
+  infGain <- InfScore(train$namembnost, test$namembnost, predictedMat)
+  print(paste("Information score:", infGain))
+}
+
+
 
 # METODE ZA OCENJEVANJE REGRESIJSKIH MODELOV
 
@@ -281,3 +297,30 @@ runWrapper <- function (formula, traindata)
   wrapper(formula, traindata, myTrainFunc, myPredictFunc, myEvalFunc, cvfolds=10)
 }
 
+voting <- function(predictions)
+{
+  res <- vector()
+  
+  for (i in 1 : nrow(predictions))    
+  {
+    vec <- unlist(predictions[i,]) # pretvorimo vrstico v vektor
+    res[i] <- names(which.max(table(vec))) # poiscemo napoved z najvec glasovi
+  }
+  
+  res
+}
+
+runVoting <- function (modelsDataFrame, observed)
+{
+  predicted <- factor(voting(modelsDataFrame), levels=levels(train$namembnost))
+  ca <- CA(observed, predicted)
+  print(paste("Classification accuracy:", ca))
+}
+
+runWeightedVoting <- function (predProb, observed) 
+{
+  predClass <- colnames(predProb)[max.col(predProb)]
+  predicted <- factor(predClass, levels(observed))
+  ca <- CA(observed, predicted)
+  print(paste("Classification accuracy:", ca))
+}
