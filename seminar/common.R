@@ -365,19 +365,14 @@ runClassification <- function (formula, train, test)
   calcCA("nakljucni gozd", dr)
 }
 
-drawCharts <- function (data)
+runRegression <- function(formula, train, test)
 {
-  pie(table(data$regija), xlab="Regija")
-  pie(table(data$stavba), xlab="Oznaka stavbe")
-  pie(table(data$namembnost), xlab="Namembnost")
-  hist(data$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
-  hist(data$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
-  hist(data$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
-  hist(data$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
-  hist(data$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
-  hist(data$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
-  hist(data$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
-  hist(data$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
-  hist(data$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
-  hist(data$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+  lmExt <- lm(formula, train)
+  EvaluateRegExtModel(lmExt, train, test)
+  
+  extModel <- rpart(formula, data=train)
+  EvaluateRegExtModel(extModel, train, test)
+  
+  extModel <- randomForest(formula, data=train)
+  EvaluateRegExtModel(extModel, train, test)
 }

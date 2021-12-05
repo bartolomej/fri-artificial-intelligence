@@ -7,6 +7,12 @@ ovrednotiti modele in jasno predstaviti dobljene rezultate.
 
 ## Knjiznice in orodja
 
+Vecina uporabljenih knjiznic je ze privzeto namescenih. Potrebno pa bo
+namestiti tudi nekaj zunanjih knjicnic, kot sta `ggplot2` in
+`ggcorrplot` (za risanje grafov).
+
+Vecina pomoznih metod se nahaja v zunanji R skripti `common.R`.
+
 ``` r
 library(lubridate) # delo z datumi
 ```
@@ -84,6 +90,7 @@ bomo pa kasneje preuredili v bolj smiselno obliko.
 ``` r
 train <- read.table("trainset.txt", header=T, sep=",")
 test <- read.table("testset.txt", header=T, sep=",")
+allData <- rbind(test, train)
 
 # zmanjsamo mnozici za potrebo razvoja
 trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.1), replace=T)
@@ -161,86 +168,109 @@ summary(train)
 
 ### Izris grafov
 
-Najprej vizualizirajmo porazdelitvene vrednosti posameznih atributov, da
-dobimo boljsi vpogled v vsak atribut posebej.
+#### Porazdelitvene vrednosti
+
+Vizualizirajmo porazdelitvene vrednosti posameznih atributov, da dobimo
+boljsi vpogled v vsak atribut posebej.
 
 ``` r
-pie(table(train$regija), xlab="Regija")
+pie(table(allData$namembnost), xlab="Namembnost")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
 
 ``` r
-pie(table(train$stavba), xlab="Oznaka stavbe")
+hist(allData$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-2.png)
 
 ``` r
-pie(table(train$namembnost), xlab="Namembnost")
+hist(allData$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-3.png)
 
 ``` r
-hist(train$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
+hist(allData$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-4.png)
 
 ``` r
-hist(train$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
+hist(allData$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-5.png)
 
 ``` r
-hist(train$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
+hist(allData$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-6.png)
 
 ``` r
-hist(train$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
+hist(allData$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-7.png)
 
 ``` r
-hist(train$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
+hist(allData$padavine, xlab="Padavine (mm)", main="Histogram kolicine padavin")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-8.png)
 
 ``` r
-hist(train$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
+hist(allData$pritisk, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-9.png)
 
 ``` r
-hist(train$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
+hist(allData$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-10.png)
 
 ``` r
-hist(train$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
+hist(allData$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-3-11.png)
 
+#### Namembnost in regija
+
+*Ugotovitve:* - priblizno polovica stavb sluzi izobrazevalnemu namenu -
+stavb z zahodno lego je malo vec kot stavb z zahodno lego - stavbe z
+vzhodno lego imajo za skoraj 13% vec stavb za izobrazevalne namene kot
+stavbe z zahodno lego
+
 ``` r
-hist(train$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
+CalcEducationalPercentage <- function(regija)
+{
+  filtered <- allData[allData$regija == regija,]
+  nrow(filtered[filtered$namembnost == "izobrazevalna",]) / nrow(filtered)
+}
+p <- ggplot(allData, aes(regija))
+p + geom_bar(aes(fill=namembnost), width = 0.5)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-3-12.png)
+![](README_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
 ``` r
-hist(train$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+paste("Odstotek izobrazevalnih stavb z vzhodno regijo", CalcEducationalPercentage("vzhodna"))
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-3-13.png)
+    ## [1] "Odstotek izobrazevalnih stavb z vzhodno regijo 0.577881828316611"
+
+``` r
+paste("Odstotek izobrazevalnih stavb z zahodno regijo", CalcEducationalPercentage("zahodna"))
+```
+
+    ## [1] "Odstotek izobrazevalnih stavb z zahodno regijo 0.452380952380952"
+
+#### Soodvisnost atributov
 
 Pri nadalnji predikciji nam bo koristilo tudi nekaj intuicije o
 soodvisnosti med doloceni atributi.
@@ -252,12 +282,8 @@ drugi atributi (npr. smer vetra \<-> poraba energije);
 Naso hipotezo lahko dodatno potrdimo z nekaj grafi, kjer prikazemo
 korelacijo med izbranimi pari atributov.
 
-Zdaj izrisimo nekaj korelacijskih grafov, da potrimo ali pa ovrzemo nase
-hipoteze. Da bo trend se bolje viden, lahko na graf izrisemo se linearno
-regresijsko premico.
-
 Pri porabi elektricne energije v odvisnosti z povrsino train vidimo, da
-obstaja jasen trend.
+obstaja jasen pozitiven trend.
 
 ``` r
 x <- train$povrsina
@@ -266,7 +292,7 @@ plot(x, y, col="lightblue")
 abline(lm(y ~ x), col = "red", lwd = 3)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-4-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
 
 Medtem ko pri grafu porabe energije v odvisnosti od smeri vetra jasne
 korelacije ni.
@@ -278,11 +304,11 @@ plot(x, y, col="lightblue")
 abline(lm(y ~ x), col = "red", lwd = 3)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
-Najboljse bi bilo primerjati vse atribute z vsemi drugimi atributi, ter
-prikazati medsebojne odvisnosti, tako bi pridobili visoko nivojski
-pogled na odvisnosti med atributi.
+Najboljse bi bilo primerjati vse (numericne) atribute z vsemi drugimi
+atributi, ter prikazati medsebojne odvisnosti, tako bi pridobili visoko
+nivojski pogled na odvisnosti med atributi.
 
 Za to vrstno vizualizacijo bomo uporabili dve zunanji knjiznici
 `ggplot2` in `ggcorrplot`, ki jih moramo prenesti in namestiti.
@@ -337,16 +363,14 @@ ggcorrplot(r,
            type="lower") # prikazi samo v spodnjem trikotniku
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 ## Priprava atributov
 
 ### Pomozne metode
 
-Sedaj bomo poskusali izboljsati kvaliteto posameznih atributov. Najbolj
-ociten atribut, ki potrebuje izboljsavo oz. obdelavo je `datum`.
-
-Najprej bomo napisali nekaj pomoznih metod za evaluacijo atributov.
+Sedaj bomo poskusali izboljsati kvaliteto posameznih atributov. Pri tem
+bomo uporabili nekaj pomoznih metod za evaluacijo.
 
 Metoda `evalClassFeatures` bo evaluirala podatke z dano formulo z vsemi
 definiranimi ocenami za klasifikacijske probleme. Prav tako bo metoda
@@ -380,10 +404,68 @@ evalRegrFeatures <- function (formula, data)
 }
 ```
 
-Poglejmo si vse ocene za trenutno mnozico atributov:
+### Izboljsava mnozice atributov
+
+Poskusimo izboljsati prvotno podatkovno mnozico z dodajanjem /
+odstranjevanjem atributov. Namen je najti cim manjso mnozico atributov
+ki maksimizira kvaliteto modela.
 
 ``` r
-evalClassFeatures(namembnost ~ ., train)
+# atributi za klasifikacijski problem
+classSetBase <- list(train=train, test=test)
+classSetExt <- list(train=train, test=test)
+
+ExtendClassSet <- function (set)
+{
+  set$oblacnost <- log1p(set$oblacnost)
+  set$poraba <- log1p(set$poraba)
+  set$povrsina <- log1p(set$povrsina)
+  set$datum <- NULL
+  set
+}
+
+classSetExt$train <- ExtendClassSet(classSetExt$train)
+classSetExt$test <- ExtendClassSet(classSetExt$test)
+
+# atributi za regresijski problem
+regSetBase <- list(train=train, test=test)
+regSetExt <- list(train=train, test=test)
+
+ExtendRegSet <- function (set)
+{
+  set$letni_cas <- as.factor(ToSeason(set$datum))
+  set$mesec <- as.factor(ToMonth(set$datum))
+  set$zima <- as.factor(IsWinter(set$datum))
+  set$vikend <- as.factor(IsWeekend(set$datum))
+  set$pritisk <- log1p(set$pritisk)
+  set$hitrost_vetra <- log1p(set$hitrost_vetra)
+  
+  set$datum <- NULL
+  set$stavba <- NULL
+  set$temp_rosisca <- NULL
+  set$padavine <- NULL
+  set$smer_vetra <- NULL
+  
+  set$namembnost <- NULL
+  set$temp_zraka <- NULL
+  
+  set$oblacnost <- log1p(set$oblacnost)
+  set$poraba <- log1p(set$poraba)
+  set$povrsina <- log1p(set$povrsina)
+  
+  set
+}
+
+regSetExt$train <- ExtendRegSet(regSetExt$train)
+regSetExt$test <- ExtendRegSet(regSetExt$test)
+```
+
+### Evalvacija atributov
+
+Poglejmo si vse ocene za prvotni mnozici atributov:
+
+``` r
+evalClassFeatures(namembnost ~ ., classSetBase$train)
 ```
 
     ## InfGain 
@@ -449,7 +531,7 @@ evalClassFeatures(namembnost ~ ., train)
     ##   0.0100941989  -0.0004917695  -0.0062426174
 
 ``` r
-evalRegrFeatures(poraba ~ ., train)
+evalRegrFeatures(poraba ~ ., regSetBase$train)
 ```
 
     ## MSEofMean 
@@ -469,180 +551,7 @@ evalRegrFeatures(poraba ~ ., train)
     ##  hitrost_vetra          datum     smer_vetra 
     ##  -0.1086545339  -0.1188974223  -0.1253054663
 
-Poskusimo izboljsati prvotno podatkovno mnozico z dodajanjem /
-odstranjevanjem atributov.
-
-``` r
-classSetBase <- list(train=train, test=test)
-classSetExt <- list(train=train, test=test)
-classSetExt$train$datum <- NULL
-classSetExt$test$datum <- NULL
-
-summary(classSetBase$train)
-```
-
-    ##      datum                regija         stavba      
-    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
-    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
-    ##  Median :2016-07-09                  Median : 77.00  
-    ##  Mean   :2016-07-02                  Mean   : 87.63  
-    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
-    ##  Max.   :2016-12-31                  Max.   :193.00  
-    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
-    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
-    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
-    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
-    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
-    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
-    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
-    ##   temp_rosisca       oblacnost        padavine          pritisk      
-    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
-    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
-    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
-    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
-    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
-    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
-    ##    smer_vetra    hitrost_vetra        poraba      
-    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
-    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
-    ##  Median :140.0   Median : 3.600   Median : 110.0  
-    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
-    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
-    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
-
-``` r
-summary(classSetExt$train)
-```
-
-    ##      regija         stavba                      namembnost      povrsina      
-    ##  vzhodna:1118   Min.   :  1.00   izobrazevalna       :1359   Min.   :  329.3  
-    ##  zahodna:1294   1st Qu.: 39.00   javno_storitvena    : 282   1st Qu.: 4274.2  
-    ##                 Median : 77.00   kulturno_razvedrilna: 298   Median : 6735.1  
-    ##                 Mean   : 87.63   poslovna            : 316   Mean   :10907.0  
-    ##                 3rd Qu.:135.00   stanovanjska        : 157   3rd Qu.:14409.3  
-    ##                 Max.   :193.00                               Max.   :79000.4  
-    ##  leto_izgradnje   temp_zraka     temp_rosisca       oblacnost    
-    ##  Min.   :1903   Min.   :-7.20   Min.   :-19.400   Min.   :0.000  
-    ##  1st Qu.:1950   1st Qu.:10.00   1st Qu.: -2.800   1st Qu.:2.000  
-    ##  Median :1970   Median :19.40   Median :  2.800   Median :4.000  
-    ##  Mean   :1971   Mean   :19.18   Mean   :  3.844   Mean   :3.676  
-    ##  3rd Qu.:2001   3rd Qu.:28.90   3rd Qu.: 10.600   3rd Qu.:6.000  
-    ##  Max.   :2017   Max.   :41.70   Max.   : 25.000   Max.   :9.000  
-    ##     padavine          pritisk         smer_vetra    hitrost_vetra   
-    ##  Min.   :-1.0000   Min.   : 997.2   Min.   :  0.0   Min.   : 0.000  
-    ##  1st Qu.: 0.0000   1st Qu.:1011.9   1st Qu.: 70.0   1st Qu.: 2.100  
-    ##  Median : 0.0000   Median :1015.9   Median :140.0   Median : 3.600  
-    ##  Mean   : 0.3922   Mean   :1017.2   Mean   :153.8   Mean   : 3.746  
-    ##  3rd Qu.: 0.0000   3rd Qu.:1022.2   3rd Qu.:240.0   3rd Qu.: 5.100  
-    ##  Max.   :56.0000   Max.   :1040.9   Max.   :360.0   Max.   :12.400  
-    ##      poraba      
-    ##  Min.   :   0.0  
-    ##  1st Qu.:  54.5  
-    ##  Median : 110.0  
-    ##  Mean   : 224.2  
-    ##  3rd Qu.: 211.6  
-    ##  Max.   :2683.3
-
-``` r
-regSetBase <- list(train=train, test=test)
-regSetExt <- list(train=train, test=test)
-
-ExtendRegSet <- function (set)
-{
-  set$letni_cas <- as.factor(ToSeason(set$datum))
-  #set$mesec <- as.factor(ToMonth(set$datum))
-  #set$zima <- as.factor(IsWinter(set$datum))
-  #set$vikend <- as.factor(IsWeekend(set$datum))
-  
-  set$datum <- NULL
-  set$stavba <- NULL
-  set$temp_rosisca <- NULL
-  set$padavine <- NULL
-  set$pritisk <- NULL
-  set$smer_vetra <- NULL
-  set$hitrost_vetra <- NULL
-  
-  set$leto_izgradnje <- NULL
-  set$regija <- NULL
-  set$namembnost <- NULL
-  set$temp_zraka <- NULL
-  
-  set$oblacnost <- log1p(set$oblacnost)
-  set$poraba <- log1p(set$poraba)
-  set$povrsina <- log1p(set$povrsina)
-  
-  set
-}
-
-regSetExt$train <- ExtendRegSet(regSetExt$train)
-regSetExt$test <- ExtendRegSet(regSetExt$test)
-
-summary(regSetBase$train)
-```
-
-    ##      datum                regija         stavba      
-    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
-    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
-    ##  Median :2016-07-09                  Median : 77.00  
-    ##  Mean   :2016-07-02                  Mean   : 87.63  
-    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
-    ##  Max.   :2016-12-31                  Max.   :193.00  
-    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
-    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
-    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
-    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
-    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
-    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
-    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
-    ##   temp_rosisca       oblacnost        padavine          pritisk      
-    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
-    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
-    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
-    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
-    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
-    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
-    ##    smer_vetra    hitrost_vetra        poraba      
-    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
-    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
-    ##  Median :140.0   Median : 3.600   Median : 110.0  
-    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
-    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
-    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
-
-``` r
-summary(regSetBase$train)
-```
-
-    ##      datum                regija         stavba      
-    ##  Min.   :2016-01-01   vzhodna:1118   Min.   :  1.00  
-    ##  1st Qu.:2016-03-08   zahodna:1294   1st Qu.: 39.00  
-    ##  Median :2016-07-09                  Median : 77.00  
-    ##  Mean   :2016-07-02                  Mean   : 87.63  
-    ##  3rd Qu.:2016-10-25                  3rd Qu.:135.00  
-    ##  Max.   :2016-12-31                  Max.   :193.00  
-    ##                 namembnost      povrsina       leto_izgradnje   temp_zraka   
-    ##  izobrazevalna       :1359   Min.   :  329.3   Min.   :1903   Min.   :-7.20  
-    ##  javno_storitvena    : 282   1st Qu.: 4274.2   1st Qu.:1950   1st Qu.:10.00  
-    ##  kulturno_razvedrilna: 298   Median : 6735.1   Median :1970   Median :19.40  
-    ##  poslovna            : 316   Mean   :10907.0   Mean   :1971   Mean   :19.18  
-    ##  stanovanjska        : 157   3rd Qu.:14409.3   3rd Qu.:2001   3rd Qu.:28.90  
-    ##                              Max.   :79000.4   Max.   :2017   Max.   :41.70  
-    ##   temp_rosisca       oblacnost        padavine          pritisk      
-    ##  Min.   :-19.400   Min.   :0.000   Min.   :-1.0000   Min.   : 997.2  
-    ##  1st Qu.: -2.800   1st Qu.:2.000   1st Qu.: 0.0000   1st Qu.:1011.9  
-    ##  Median :  2.800   Median :4.000   Median : 0.0000   Median :1015.9  
-    ##  Mean   :  3.844   Mean   :3.676   Mean   : 0.3922   Mean   :1017.2  
-    ##  3rd Qu.: 10.600   3rd Qu.:6.000   3rd Qu.: 0.0000   3rd Qu.:1022.2  
-    ##  Max.   : 25.000   Max.   :9.000   Max.   :56.0000   Max.   :1040.9  
-    ##    smer_vetra    hitrost_vetra        poraba      
-    ##  Min.   :  0.0   Min.   : 0.000   Min.   :   0.0  
-    ##  1st Qu.: 70.0   1st Qu.: 2.100   1st Qu.:  54.5  
-    ##  Median :140.0   Median : 3.600   Median : 110.0  
-    ##  Mean   :153.8   Mean   : 3.746   Mean   : 224.2  
-    ##  3rd Qu.:240.0   3rd Qu.: 5.100   3rd Qu.: 211.6  
-    ##  Max.   :360.0   Max.   :12.400   Max.   :2683.3
-
-Ponovno evaluiramo ocene atributov:
+Ponovno evaluiramo atribute za popravljeni mnozici atributov:
 
 ``` r
 evalClassFeatures(namembnost ~ ., classSetExt$train)
@@ -685,49 +594,57 @@ evalClassFeatures(namembnost ~ ., classSetExt$train)
     ## 
     ## 
     ## Relief 
-    ## leto_izgradnje         stavba       povrsina         poraba         regija 
-    ##    0.371825085    0.251589276    0.232279437    0.153012381    0.002072968 
-    ##       padavine     temp_zraka        pritisk      oblacnost   temp_rosisca 
-    ##   -0.002911854   -0.088117411   -0.090290032   -0.090796020   -0.104234209 
+    ## leto_izgradnje       povrsina         stavba         poraba         regija 
+    ##    0.464638309    0.418794058    0.330566496    0.304080488    0.002487562 
+    ##       padavine        pritisk      oblacnost     temp_zraka   temp_rosisca 
+    ##   -0.004744795   -0.117071963   -0.117369800   -0.120678701   -0.138032933 
     ##  hitrost_vetra     smer_vetra 
-    ##   -0.107830025   -0.127026903 
+    ##   -0.140582928   -0.164532277 
     ## 
     ## 
     ## ReliefFequalK 
-    ## leto_izgradnje         stavba       povrsina         regija         poraba 
-    ##   4.049848e-01   3.651760e-01   2.349982e-01   1.778450e-01   1.353718e-01 
-    ##     temp_zraka     smer_vetra        pritisk   temp_rosisca       padavine 
-    ##   4.229916e-02   3.061915e-02   1.983897e-02   6.617107e-03   6.905270e-04 
+    ## leto_izgradnje         stavba       povrsina         poraba         regija 
+    ##   0.4752112064   0.4313454768   0.4216174488   0.2715857680   0.1655832174 
+    ##     temp_zraka       padavine        pritisk     smer_vetra   temp_rosisca 
+    ##   0.0119328704   0.0010015730  -0.0004986693  -0.0035302509  -0.0202235950 
     ##      oblacnost  hitrost_vetra 
-    ##  -8.498741e-05  -6.046736e-03 
+    ##  -0.0249773120  -0.0339796996 
     ## 
     ## 
     ## ReliefFexpRank 
-    ## leto_izgradnje         stavba       povrsina         regija         poraba 
-    ##   3.890681e-01   3.538168e-01   2.225728e-01   2.009001e-01   1.221790e-01 
-    ##     temp_zraka     smer_vetra        pritisk   temp_rosisca      oblacnost 
-    ##   3.873656e-02   1.769694e-02   1.440180e-02   6.469588e-03  -9.525279e-05 
-    ##       padavine  hitrost_vetra 
-    ##  -5.586294e-04  -1.863089e-02
+    ## leto_izgradnje         stavba       povrsina         poraba         regija 
+    ##    0.446276723    0.412888415    0.403565235    0.253276937    0.189818904 
+    ##     temp_zraka       padavine        pritisk     smer_vetra   temp_rosisca 
+    ##    0.010362965   -0.001088266   -0.006924251   -0.008219028   -0.018061265 
+    ##      oblacnost  hitrost_vetra 
+    ##   -0.024973839   -0.043946605
 
 ``` r
 evalRegrFeatures(poraba ~ ., regSetExt$train)
 ```
 
     ## MSEofMean 
-    ##   povrsina  letni_cas  oblacnost 
-    ## -0.9014081 -1.4253287 -1.4329784 
+    ##       povrsina leto_izgradnje          mesec      letni_cas         regija 
+    ##     -0.9014081     -1.3289248     -1.4152002     -1.4253287     -1.4302387 
+    ##  hitrost_vetra      oblacnost        pritisk           zima         vikend 
+    ##     -1.4328816     -1.4329784     -1.4335648     -1.4350186     -1.4357428 
     ## 
     ## 
     ## RReliefFexpRank 
-    ##     povrsina    letni_cas    oblacnost 
-    ##  0.150621379 -0.005415503 -0.009071315
+    ##       povrsina leto_izgradnje         regija           zima      letni_cas 
+    ##    0.334633512    0.160609243    0.009354531   -0.002923525   -0.024754519 
+    ##         vikend        pritisk      oblacnost          mesec  hitrost_vetra 
+    ##   -0.037839612   -0.064911551   -0.088202775   -0.095756261   -0.101081968
 
 ## Modeliranje
 
 ### Klasifikacija
 
 #### Vecinski klasifikator
+
+Vecinski klasifikator uvrsti vsak primer v razred ki se najveckrat
+pojavi. Ta klasifikator bo predstavljal spodnjo mejo kvalitete ucnih
+modelov.
 
 ``` r
 # najveckrat se ponovi "izobrazevalna" namembnost
@@ -739,6 +656,7 @@ sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
 #### Odlocitveno drevo
 
 ``` r
+# osnovna mnozica atributov
 dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
 EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
 ```
@@ -748,6 +666,7 @@ EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
     ## [1] "Information score: 0"
 
 ``` r
+# popravljena mnozica atributov
 dtExt <- rpart(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
 ```
@@ -887,9 +806,9 @@ knnExt <- CoreModel(namembnost ~ ., data=classSetExt$train, model="knn", kInNN=5
 EvaluateClassModel(knnExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.790334448160526"
-    ## [1] "Classification accuracy: 0.442307692307692"
-    ## [1] "Information score: 0.388901411241563"
+    ## [1] "Brier score: 0.761003344481592"
+    ## [1] "Classification accuracy: 0.48494983277592"
+    ## [1] "Information score: 0.456475810952357"
 
 #### Nakljucni gozd
 
@@ -907,13 +826,17 @@ rfExt <- randomForest(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
 ```
 
-    ## [1] "Brier score: 0.656645060200652"
-    ## [1] "Classification accuracy: 0.566889632107023"
-    ## [1] "Information score: 0.620174425085266"
+    ## [1] "Brier score: 0.652024361203998"
+    ## [1] "Classification accuracy: 0.56814381270903"
+    ## [1] "Information score: 0.620822906335984"
 
 ### Regresija
 
 #### Trivialni model
+
+Trivialni model vedno vraca povprecno vrednost ciljne spremenljivke,
+glede na vse ucne primere. Ta model bo predstavljal spodnjo mejo
+kvalitete ucnih modelov.
 
 ``` r
 meanValue <- mean(regSetBase$train$poraba)
@@ -928,37 +851,43 @@ EvaluateTrivialRegModel(observed, predicted)
     ## [1] "Relativna srednja absolutna napaka: 1"
     ## [1] "Relativna srednja kvadratna napaka: 1"
 
-![](README_files/figure-markdown_github/unnamed-chunk-19-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-20-1.png)
 
 #### Linearna regresija
 
 ``` r
-lmBase <- lm(poraba ~ ., regSetBase$train)
+# osnovna mnozica atributov
+lmBase <- lm(poraba ~ povrsina + leto_izgradnje, regSetBase$train)
 EvaluateRegBaseModel(lmBase, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 112.607687408779"
-    ## [1] "Srednja kvadratna napaka: 48270.1016420514"
-    ## [1] "Relativna srednja absolutna napaka: 0.721244433372159"
-    ## [1] "Relativna srednja kvadratna napaka: 1.11627272377339"
+    ## [1] "Srednja absolutna napaka: 107.298030128528"
+    ## [1] "Srednja kvadratna napaka: 47465.6068612006"
+    ## [1] "Relativna srednja absolutna napaka: 0.687236446487628"
+    ## [1] "Relativna srednja kvadratna napaka: 1.09766833824834"
 
-![](README_files/figure-markdown_github/unnamed-chunk-20-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-21-1.png)
 
 ``` r
+# popravljena mnozica atributov
 lmExt <- lm(poraba ~ ., regSetExt$train)
 EvaluateRegExtModel(lmExt, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 78.4413880159779"
-    ## [1] "Srednja kvadratna napaka: 24053.470703846"
-    ## [1] "Relativna srednja absolutna napaka: 0.525073457394758"
-    ## [1] "Relativna srednja kvadratna napaka: 0.397039336657929"
+    ## Warning in predict.lm(model, test): prediction from a rank-deficient fit may be
+    ## misleading
 
-![](README_files/figure-markdown_github/unnamed-chunk-20-2.png)
+    ## [1] "Srednja absolutna napaka: 74.0012295363632"
+    ## [1] "Srednja kvadratna napaka: 19916.7077316699"
+    ## [1] "Relativna srednja absolutna napaka: 0.495351783374952"
+    ## [1] "Relativna srednja kvadratna napaka: 0.328755734403337"
+
+![](README_files/figure-markdown_github/unnamed-chunk-21-2.png)
 
 #### Regresijsko drevo
 
 ``` r
+# osnovna mnozica atributov
 baseModel <- rpart(poraba ~ ., data=regSetBase$train)
 EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 ```
@@ -968,131 +897,120 @@ EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
     ## [1] "Relativna srednja absolutna napaka: 0.841678857664654"
     ## [1] "Relativna srednja kvadratna napaka: 2.09616009367211"
 
-![](README_files/figure-markdown_github/unnamed-chunk-21-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 ``` r
+# popravljena mnozica atributov
 extModel <- rpart(poraba ~ ., data=regSetExt$train)
 EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 92.2984030060386"
-    ## [1] "Srednja kvadratna napaka: 32046.0800221231"
-    ## [1] "Relativna srednja absolutna napaka: 0.617829984963089"
-    ## [1] "Relativna srednja kvadratna napaka: 0.528969582441017"
+    ## [1] "Srednja absolutna napaka: 97.6424658945491"
+    ## [1] "Srednja kvadratna napaka: 31421.5743820927"
+    ## [1] "Relativna srednja absolutna napaka: 0.653602243057674"
+    ## [1] "Relativna srednja kvadratna napaka: 0.518661161335819"
 
-![](README_files/figure-markdown_github/unnamed-chunk-21-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-22-2.png)
 
 #### Nakljucni gozd
 
 ``` r
+# osnovna mnozica atributov
 baseModel <- randomForest(poraba ~ ., data=regSetBase$train)
 EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 95.0150252577187"
-    ## [1] "Srednja kvadratna napaka: 25439.0674417027"
-    ## [1] "Relativna srednja absolutna napaka: 0.60856465158614"
-    ## [1] "Relativna srednja kvadratna napaka: 0.588292465468228"
+    ## [1] "Srednja absolutna napaka: 96.5330809300327"
+    ## [1] "Srednja kvadratna napaka: 25582.2719345468"
+    ## [1] "Relativna srednja absolutna napaka: 0.618287692955694"
+    ## [1] "Relativna srednja kvadratna napaka: 0.591604148349465"
 
-![](README_files/figure-markdown_github/unnamed-chunk-22-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 ``` r
+# popravljena mnozica atributov
 extModel <- randomForest(poraba ~ ., data=regSetExt$train)
 EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 83.0135138212335"
-    ## [1] "Srednja kvadratna napaka: 24167.6866971511"
-    ## [1] "Relativna srednja absolutna napaka: 0.555678498495259"
-    ## [1] "Relativna srednja kvadratna napaka: 0.398924646382082"
+    ## [1] "Srednja absolutna napaka: 78.3879489789711"
+    ## [1] "Srednja kvadratna napaka: 21329.4179641908"
+    ## [1] "Relativna srednja absolutna napaka: 0.524715745469577"
+    ## [1] "Relativna srednja kvadratna napaka: 0.35207467828948"
 
-![](README_files/figure-markdown_github/unnamed-chunk-22-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-23-2.png)
 
 #### Nevronske mreze
 
 ``` r
+# osnovna mnozica atributov
 baseModel <- nnet(poraba ~ ., regSetBase$train, size=5, decay=0.001, maxit=10000, linout=T)
 ```
 
     ## # weights:  91
-    ## initial  value 370406727.018620 
-    ## final  value 170275151.850343 
+    ## initial  value 370994700.372666 
+    ## final  value 249206001.413665 
     ## converged
 
 ``` r
 EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 127.106043095117"
-    ## [1] "Srednja kvadratna napaka: 36126.050731913"
-    ## [1] "Relativna srednja absolutna napaka: 0.814105396708181"
-    ## [1] "Relativna srednja kvadratna napaka: 0.835434848443671"
+    ## [1] "Srednja absolutna napaka: 156.129621657455"
+    ## [1] "Srednja kvadratna napaka: 43242.1913023466"
+    ## [1] "Relativna srednja absolutna napaka: 0.999999405867931"
+    ## [1] "Relativna srednja kvadratna napaka: 0.999999524031428"
 
-![](README_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 ``` r
+# popravljena mnozica atributov
 extModel <- nnet(poraba ~ ., regSetExt$train, size=5, decay=0.001, maxit=10000, linout=T)
 ```
 
-    ## # weights:  36
-    ## initial  value 50706.786591 
-    ## iter  10 value 3193.440717
-    ## iter  20 value 2216.064906
-    ## iter  30 value 1623.194558
-    ## iter  40 value 1477.860293
-    ## iter  50 value 1448.831703
-    ## iter  60 value 1439.166441
-    ## iter  70 value 1436.167244
-    ## iter  80 value 1434.104367
-    ## iter  90 value 1432.153715
-    ## iter 100 value 1431.834668
-    ## iter 110 value 1430.869607
-    ## iter 120 value 1430.259632
-    ## iter 130 value 1429.825904
-    ## iter 140 value 1429.523048
-    ## iter 150 value 1428.807656
-    ## iter 160 value 1426.087846
-    ## iter 170 value 1425.186949
-    ## iter 180 value 1423.700117
-    ## iter 190 value 1422.186204
-    ## iter 200 value 1421.070882
-    ## iter 210 value 1420.272583
-    ## iter 220 value 1419.683786
-    ## iter 230 value 1419.583470
-    ## iter 240 value 1419.535165
-    ## iter 250 value 1419.487772
-    ## iter 260 value 1419.182199
-    ## iter 270 value 1418.677756
-    ## iter 280 value 1418.320332
-    ## iter 290 value 1417.610299
-    ## iter 300 value 1416.729663
-    ## iter 310 value 1416.267778
-    ## iter 320 value 1416.192507
-    ## iter 330 value 1415.416290
-    ## iter 340 value 1414.648789
-    ## iter 350 value 1414.498248
-    ## iter 360 value 1414.350164
-    ## iter 370 value 1414.307486
-    ## iter 380 value 1414.285791
-    ## final  value 1414.283091 
+    ## # weights:  121
+    ## initial  value 33786.792735 
+    ## iter  10 value 3463.168298
+    ## iter  20 value 3463.150458
+    ## iter  30 value 3453.852050
+    ## iter  40 value 2884.543830
+    ## iter  50 value 2483.606368
+    ## iter  60 value 2012.801329
+    ## iter  70 value 1789.832926
+    ## iter  80 value 1604.558993
+    ## iter  90 value 1435.595895
+    ## iter 100 value 1411.877983
+    ## iter 110 value 1408.862694
+    ## iter 120 value 1407.505882
+    ## iter 130 value 1405.345119
+    ## iter 140 value 1404.731765
+    ## iter 150 value 1404.317679
+    ## iter 160 value 1404.041677
+    ## iter 170 value 1403.315886
+    ## iter 180 value 1403.170145
+    ## iter 190 value 1403.115655
+    ## iter 200 value 1403.056179
+    ## iter 210 value 1403.032289
+    ## iter 220 value 1403.025350
+    ## iter 230 value 1403.023959
+    ## iter 240 value 1403.022255
+    ## final  value 1403.022119 
     ## converged
 
 ``` r
 EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
-    ## [1] "Srednja absolutna napaka: 87.7310968229739"
-    ## [1] "Srednja kvadratna napaka: 39670.7242956365"
-    ## [1] "Relativna srednja absolutna napaka: 0.587257205602862"
-    ## [1] "Relativna srednja kvadratna napaka: 0.654826002160288"
+    ## [1] "Srednja absolutna napaka: 77.938639121452"
+    ## [1] "Srednja kvadratna napaka: 23484.1965754327"
+    ## [1] "Relativna srednja absolutna napaka: 0.521708140858081"
+    ## [1] "Relativna srednja kvadratna napaka: 0.387642596158205"
 
-![](README_files/figure-markdown_github/unnamed-chunk-23-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-24-2.png)
 
-## Izboljsava modelov
+## Izboljsava klasifikacijskih modelov
 
-### Klasifikacija
-
-#### Metoda ovojnice
+### Metoda ovojnice
 
 Izboljsava klasifikacijskega modela z izbiro optimalne podmnozice
 atributov, ki minimizira doloceno oceno.
@@ -1216,7 +1134,7 @@ EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
     ## [1] "Classification accuracy: 0.514632107023411"
     ## [1] "Information score: 0.599764290298839"
 
-#### Glasovanje
+### Glasovanje
 
 Zgradimo modele z osnovno in popravljeno mnozico atributov:
 
@@ -1264,9 +1182,9 @@ modelsDf <- data.frame(
 runVoting(modelsDf, classSetExt$test$namembnost)
 ```
 
-    ## [1] "Classification accuracy: 0.508361204013378"
+    ## [1] "Classification accuracy: 0.522157190635452"
 
-#### Utezeno glasovanje
+### Utezeno glasovanje
 
 Glasovanje z osnovno mnozico atributov:
 
@@ -1288,9 +1206,9 @@ predRfExt <- predict(rfExt, classSetExt$test, type="prob")
 runWeightedVoting(predDtExt + predKnnExt + predRfExt, classSetExt$test$namembnost)
 ```
 
-    ## [1] "Classification accuracy: 0.528846153846154"
+    ## [1] "Classification accuracy: 0.538461538461538"
 
-#### Bagging
+### Bagging
 
 Bagging z osnovno mnozico atributov:
 
@@ -1301,7 +1219,7 @@ ca <- CA(classSetBase$test$namembnost, predictions$class)
 print(paste("Classification accuracy:", ca))
 ```
 
-    ## [1] "Classification accuracy: 0.512959866220736"
+    ## [1] "Classification accuracy: 0.535535117056856"
 
 Bagging z popravljeno mnozico atributov:
 
@@ -1312,9 +1230,9 @@ ca <- CA(classSetExt$test$namembnost, predictions$class)
 print(paste("Classification accuracy:", ca))
 ```
 
-    ## [1] "Classification accuracy: 0.53804347826087"
+    ## [1] "Classification accuracy: 0.525083612040134"
 
-#### Boosting
+### Boosting
 
 Boosting z osnovno mnozico atributov:
 
@@ -1336,45 +1254,141 @@ ca <- CA(classSetExt$test$namembnost, predictions$class)
 print(paste("Classification accuracy:", ca))
 ```
 
-    ## [1] "Classification accuracy: 0.492892976588629"
+    ## [1] "Classification accuracy: 0.469063545150502"
 
 ## Primerjava po regijah
 
-### Klasifikacija
+### Priprava podatkov
 
-Priprava podatkov.
+Pripravimo podatke, tako da ucno in testno mnozico razbijemo na dve
+podmnozici: - mnozica ki vsebuje samo primere z vzhodno regijo - mnozica
+ki vsebuje samo primere z zahodno regijo
+
+#### Podatki za klasifikacijo
 
 ``` r
 selTrain <- classSetExt$train$regija == "vzhodna"
 selTest <- classSetExt$test$regija == "vzhodna"
 
-extVzhodnaTrain <- classSetExt$train[selTrain,]
-extVzhodnaTest <- classSetExt$test[selTest,]
-extVzhodnaTrain$regija <- NULL
-extVzhodnaTest$regija <- NULL
+classVzhodnaTrain <- classSetExt$train[selTrain,]
+classVzhodnaTest <- classSetExt$test[selTest,]
+classVzhodnaTrain$regija <- NULL
+classVzhodnaTest$regija <- NULL
 
-extZahodnaTrain <- classSetExt$train[!selTrain,]
-extZahodnaTest <- classSetExt$test[!selTest,]
-extZahodnaTrain$regija <- NULL
-extZahodnaTest$regija <- NULL
+classZahodnaTrain <- classSetExt$train[!selTrain,]
+classZahodnaTest <- classSetExt$test[!selTest,]
+classZahodnaTrain$regija <- NULL
+classZahodnaTest$regija <- NULL
 ```
 
+#### Podatki za regresijo
+
 ``` r
-runClassification(namembnost ~ ., extVzhodnaTrain, extVzhodnaTest)
+selTrain <- regSetExt$train$regija == "vzhodna"
+selTest <- regSetExt$test$regija == "vzhodna"
+
+regVzhodnaTrain <- regSetExt$train[selTrain,]
+regVzhodnaTest <- regSetExt$test[selTest,]
+regVzhodnaTrain$regija <- NULL
+regVzhodnaTest$regija <- NULL
+
+regZahodnaTrain <- regSetExt$train[!selTrain,]
+regZahodnaTest <- regSetExt$test[!selTest,]
+regZahodnaTrain$regija <- NULL
+regZahodnaTest$regija <- NULL
+```
+
+### Evalvacija
+
+#### Klasifikacija
+
+Zgradimo nekaj klasifikacijskih modelov, ki se ucijo iz posamezne
+podmnozice, ter vsakega posebej se ocenimo glede na testne primere iz
+ustrezne testne mnozice.
+
+``` r
+runClassification(namembnost ~ ., classVzhodnaTrain, classVzhodnaTest)
 ```
 
     ## [1] "Trivial classification accuracy: 0.527433628318584"
     ## [1] "odlocitveno drevo classification accuracy: 0.708849557522124"
     ## [1] "naivni bayes classification accuracy: 0.587610619469027"
-    ## [1] "k-najblizjih sosedov classification accuracy: 0.530973451327434"
+    ## [1] "k-najblizjih sosedov classification accuracy: 0.588495575221239"
     ## [1] "nakljucni gozd classification accuracy: 0.769026548672566"
 
 ``` r
-runClassification(namembnost ~ ., extZahodnaTrain, extZahodnaTest)
+runClassification(namembnost ~ ., classZahodnaTrain, classZahodnaTest)
 ```
 
     ## [1] "Trivial classification accuracy: 0.44215530903328"
     ## [1] "odlocitveno drevo classification accuracy: 0.327258320126783"
     ## [1] "naivni bayes classification accuracy: 0.329635499207607"
-    ## [1] "k-najblizjih sosedov classification accuracy: 0.388272583201268"
-    ## [1] "nakljucni gozd classification accuracy: 0.391442155309033"
+    ## [1] "k-najblizjih sosedov classification accuracy: 0.389064976228209"
+    ## [1] "nakljucni gozd classification accuracy: 0.38351822503962"
+
+#### Regresija
+
+Zgradimo nekaj regresijskih modelov, ki se ucijo iz posamezne
+podmnozice, ter vsakega posebej se ocenimo glede na testne primere iz
+ustrezne testne mnozice.
+
+``` r
+runRegression(poraba ~ ., regVzhodnaTrain, regVzhodnaTest)
+```
+
+    ## Warning in predict.lm(model, test): prediction from a rank-deficient fit may be
+    ## misleading
+
+    ## [1] "Srednja absolutna napaka: 68.0364221786923"
+    ## [1] "Srednja kvadratna napaka: 24245.8709018281"
+    ## [1] "Relativna srednja absolutna napaka: 0.482408149805635"
+    ## [1] "Relativna srednja kvadratna napaka: 0.324012921907863"
+
+![](README_files/figure-markdown_github/unnamed-chunk-39-1.png)
+
+    ## [1] "Srednja absolutna napaka: 69.7672168706825"
+    ## [1] "Srednja kvadratna napaka: 19365.4640776844"
+    ## [1] "Relativna srednja absolutna napaka: 0.494680245226284"
+    ## [1] "Relativna srednja kvadratna napaka: 0.258792955935403"
+
+![](README_files/figure-markdown_github/unnamed-chunk-39-2.png)
+
+    ## [1] "Srednja absolutna napaka: 62.9844710717455"
+    ## [1] "Srednja kvadratna napaka: 17976.4119691739"
+    ## [1] "Relativna srednja absolutna napaka: 0.446587595044395"
+    ## [1] "Relativna srednja kvadratna napaka: 0.240230173258587"
+
+![](README_files/figure-markdown_github/unnamed-chunk-39-3.png)
+
+``` r
+runRegression(poraba ~ ., regZahodnaTrain, regZahodnaTest)
+```
+
+    ## Warning in predict.lm(model, test): prediction from a rank-deficient fit may be
+    ## misleading
+
+    ## [1] "Srednja absolutna napaka: 102.234797806236"
+    ## [1] "Srednja kvadratna napaka: 40377.2807422382"
+    ## [1] "Relativna srednja absolutna napaka: 0.651691692238129"
+    ## [1] "Relativna srednja kvadratna napaka: 0.844254033480331"
+
+![](README_files/figure-markdown_github/unnamed-chunk-40-1.png)
+
+    ## [1] "Srednja absolutna napaka: 105.516186325833"
+    ## [1] "Srednja kvadratna napaka: 30080.6996535656"
+    ## [1] "Relativna srednja absolutna napaka: 0.672608774123297"
+    ## [1] "Relativna srednja kvadratna napaka: 0.628961424484114"
+
+![](README_files/figure-markdown_github/unnamed-chunk-40-2.png)
+
+    ## [1] "Srednja absolutna napaka: 86.0077749517434"
+    ## [1] "Srednja kvadratna napaka: 20390.91090344"
+    ## [1] "Relativna srednja absolutna napaka: 0.548253174131273"
+    ## [1] "Relativna srednja kvadratna napaka: 0.426356318704711"
+
+![](README_files/figure-markdown_github/unnamed-chunk-40-3.png)
+
+### Ugotovitve
+
+Opazimo, da je klasifikacijska in regresijska napoved obcutno uspesnejsa
+za primere iz podmnozice podatkov z vzhodno regijo.

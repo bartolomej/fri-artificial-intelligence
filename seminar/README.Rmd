@@ -13,6 +13,10 @@ ustrezno ovrednotiti modele in jasno predstaviti dobljene rezultate.
 
 ## Knjiznice in orodja
 
+Vecina uporabljenih knjiznic je ze privzeto namescenih. Potrebno pa bo namestiti tudi nekaj zunanjih knjicnic, kot sta `ggplot2` in `ggcorrplot` (za risanje grafov).
+
+Vecina pomoznih metod se nahaja v zunanji R skripti `common.R`.
+
 ```{R}
 library(lubridate) # delo z datumi
 library(stringr) # delo z znakovnimi nizi
@@ -41,6 +45,7 @@ Opazimo, da imamo 3 atribute tipa "character": `datum`, `regija` in `namembnost`
 ```{R}
 train <- read.table("trainset.txt", header=T, sep=",")
 test <- read.table("testset.txt", header=T, sep=",")
+allData <- rbind(test, train)
 
 # zmanjsamo mnozici za potrebo razvoja
 trainSel <- sample(1:nrow(train), as.integer(nrow(train) * 0.1), replace=T)
@@ -58,22 +63,43 @@ summary(train)
 
 ### Izris grafov
 
-Najprej vizualizirajmo porazdelitvene vrednosti posameznih atributov, da dobimo boljsi vpogled v vsak atribut posebej.
+#### Porazdelitvene vrednosti
+
+Vizualizirajmo porazdelitvene vrednosti posameznih atributov, da dobimo boljsi vpogled v vsak atribut posebej.
 ```{R}
-pie(table(train$regija), xlab="Regija")
-pie(table(train$stavba), xlab="Oznaka stavbe")
-pie(table(train$namembnost), xlab="Namembnost")
-hist(train$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
-hist(train$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
-hist(train$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
-hist(train$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
-hist(train$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
-hist(train$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
-hist(train$oblacnost, xlab="Padavine (mm)", main="Histogram kolicine padavin")
-hist(train$oblacnost, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
-hist(train$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
-hist(train$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
+pie(table(allData$namembnost), xlab="Namembnost")
+hist(allData$povrsina, xlab="Povrsina (m^2)", main="Histogram povrsine stavb")
+hist(allData$poraba, xlab="Poraba (kWh)", main="Histogram porabe stavb")
+hist(allData$leto_izgradnje, xlab="Leto izgradnje", main="Histogram leta izgradnje stavb")
+hist(allData$temp_zraka, xlab="Temperatura zraka (°C)", main="Histogram temperature zraka")
+hist(allData$temp_rosisca, xlab="Temperatura rosisca (°C)", main="Histogram temperature rosisca")
+hist(allData$oblacnost, xlab="Oblacnost", main="Histogram stopnje pokritosti neba z oblaki")
+hist(allData$padavine, xlab="Padavine (mm)", main="Histogram kolicine padavin")
+hist(allData$pritisk, xlab="Pritisk (mbar)", main="Histogram zracnega pritiska")
+hist(allData$smer_vetra, xlab="Smer vetra (°)", main="Histogram smeri vetra")
+hist(allData$hitrost_vetra, xlab="Hitrost vetra (m/s)", main="Histogram hitrosti vetra")
 ```
+
+#### Namembnost in regija
+
+*Ugotovitve:*
+- priblizno polovica stavb sluzi izobrazevalnemu namenu
+- stavb z zahodno lego je malo vec kot stavb z zahodno lego
+- stavbe z vzhodno lego imajo za skoraj 13% vec stavb za izobrazevalne namene kot stavbe z zahodno lego
+```{R}
+CalcEducationalPercentage <- function(regija)
+{
+  filtered <- allData[allData$regija == regija,]
+  nrow(filtered[filtered$namembnost == "izobrazevalna",]) / nrow(filtered)
+}
+p <- ggplot(allData, aes(regija))
+p + geom_bar(aes(fill=namembnost), width = 0.5)
+
+paste("Odstotek izobrazevalnih stavb z vzhodno regijo", CalcEducationalPercentage("vzhodna"))
+paste("Odstotek izobrazevalnih stavb z zahodno regijo", CalcEducationalPercentage("zahodna"))
+```
+
+#### Soodvisnost atributov
 
 Pri nadalnji predikciji nam bo koristilo tudi nekaj intuicije o soodvisnosti med doloceni atributi. 
 
@@ -81,9 +107,7 @@ Ze samo po sebi je logicno, da bodo nekateri atributi (npr. povrsina train <-> p
 
 Naso hipotezo lahko dodatno potrdimo z nekaj grafi, kjer prikazemo korelacijo med izbranimi pari atributov.
 
-Zdaj izrisimo nekaj korelacijskih grafov, da potrimo ali pa ovrzemo nase hipoteze. Da bo trend se bolje viden, lahko na graf izrisemo se linearno regresijsko premico.
-
-Pri porabi elektricne energije v odvisnosti z povrsino train vidimo, da obstaja jasen trend.
+Pri porabi elektricne energije v odvisnosti z povrsino train vidimo, da obstaja jasen pozitiven trend. 
 ```{R}
 x <- train$povrsina
 y <- train$poraba
@@ -99,7 +123,7 @@ plot(x, y, col="lightblue")
 abline(lm(y ~ x), col = "red", lwd = 3)
 ```
 
-Najboljse bi bilo primerjati vse atribute z vsemi drugimi atributi, ter prikazati medsebojne odvisnosti, tako bi pridobili visoko nivojski pogled na odvisnosti med atributi.
+Najboljse bi bilo primerjati vse (numericne) atribute z vsemi drugimi atributi, ter prikazati medsebojne odvisnosti, tako bi pridobili visoko nivojski pogled na odvisnosti med atributi.
 
 Za to vrstno vizualizacijo bomo uporabili dve zunanji knjiznici `ggplot2` in `ggcorrplot`, ki jih moramo prenesti in namestiti.
 
@@ -125,9 +149,7 @@ ggcorrplot(r,
 
 ### Pomozne metode
 
-Sedaj bomo poskusali izboljsati kvaliteto posameznih atributov. Najbolj ociten atribut, ki potrebuje izboljsavo oz. obdelavo je `datum`.
-
-Najprej bomo napisali nekaj pomoznih metod za evaluacijo atributov. 
+Sedaj bomo poskusali izboljsati kvaliteto posameznih atributov. Pri tem bomo uporabili nekaj pomoznih metod za evaluacijo.
 
 Metoda `evalClassFeatures` bo evaluirala podatke z dano formulo z vsemi definiranimi ocenami za klasifikacijske probleme. Prav tako bo metoda `evalRegrFeatures` evaluirala atribute z definiranimi ocenami za regresijske probleme.
 
@@ -160,46 +182,45 @@ evalRegrFeatures <- function (formula, data)
 ```
 
 
-Poglejmo si vse ocene za trenutno mnozico atributov:
+### Izboljsava mnozice atributov
 
+Poskusimo izboljsati prvotno podatkovno mnozico z dodajanjem / odstranjevanjem atributov. Namen je najti cim manjso mnozico atributov ki maksimizira kvaliteto modela.
 ```{R}
-evalClassFeatures(namembnost ~ ., train)
-```
-
-```{R}
-evalRegrFeatures(poraba ~ ., train)
-```
-
-Poskusimo izboljsati prvotno podatkovno mnozico z dodajanjem / odstranjevanjem atributov.
-```{R}
+# atributi za klasifikacijski problem
 classSetBase <- list(train=train, test=test)
 classSetExt <- list(train=train, test=test)
-classSetExt$train$datum <- NULL
-classSetExt$test$datum <- NULL
 
-summary(classSetBase$train)
-summary(classSetExt$train)
+ExtendClassSet <- function (set)
+{
+  set$oblacnost <- log1p(set$oblacnost)
+  set$poraba <- log1p(set$poraba)
+  set$povrsina <- log1p(set$povrsina)
+  set$datum <- NULL
+  set
+}
 
+classSetExt$train <- ExtendClassSet(classSetExt$train)
+classSetExt$test <- ExtendClassSet(classSetExt$test)
+
+# atributi za regresijski problem
 regSetBase <- list(train=train, test=test)
 regSetExt <- list(train=train, test=test)
 
 ExtendRegSet <- function (set)
 {
   set$letni_cas <- as.factor(ToSeason(set$datum))
-  #set$mesec <- as.factor(ToMonth(set$datum))
-  #set$zima <- as.factor(IsWinter(set$datum))
-  #set$vikend <- as.factor(IsWeekend(set$datum))
+  set$mesec <- as.factor(ToMonth(set$datum))
+  set$zima <- as.factor(IsWinter(set$datum))
+  set$vikend <- as.factor(IsWeekend(set$datum))
+  set$pritisk <- log1p(set$pritisk)
+  set$hitrost_vetra <- log1p(set$hitrost_vetra)
   
   set$datum <- NULL
   set$stavba <- NULL
   set$temp_rosisca <- NULL
   set$padavine <- NULL
-  set$pritisk <- NULL
   set$smer_vetra <- NULL
-  set$hitrost_vetra <- NULL
   
-  set$leto_izgradnje <- NULL
-  set$regija <- NULL
   set$namembnost <- NULL
   set$temp_zraka <- NULL
   
@@ -212,12 +233,21 @@ ExtendRegSet <- function (set)
 
 regSetExt$train <- ExtendRegSet(regSetExt$train)
 regSetExt$test <- ExtendRegSet(regSetExt$test)
-
-summary(regSetBase$train)
-summary(regSetBase$train)
 ```
 
-Ponovno evaluiramo ocene atributov:
+### Evalvacija atributov
+
+Poglejmo si vse ocene za prvotni mnozici atributov:
+
+```{R}
+evalClassFeatures(namembnost ~ ., classSetBase$train)
+```
+
+```{R}
+evalRegrFeatures(poraba ~ ., regSetBase$train)
+```
+
+Ponovno evaluiramo atribute za popravljeni mnozici atributov:
 ```{R}
 evalClassFeatures(namembnost ~ ., classSetExt$train)
 ```
@@ -226,13 +256,14 @@ evalClassFeatures(namembnost ~ ., classSetExt$train)
 evalRegrFeatures(poraba ~ ., regSetExt$train)
 ```
 
-
 ## Modeliranje
 
 ### Klasifikacija
 
 #### Vecinski klasifikator
 
+Vecinski klasifikator uvrsti vsak primer v razred ki se najveckrat pojavi. 
+Ta klasifikator bo predstavljal spodnjo mejo kvalitete ucnih modelov.
 ```{R}
 # najveckrat se ponovi "izobrazevalna" namembnost
 sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
@@ -241,9 +272,11 @@ sum(test$namembnost == "izobrazevalna") / length(test$namembnost)
 #### Odlocitveno drevo
 
 ```{R}
+# osnovna mnozica atributov
 dtBase <- rpart(namembnost ~ pritisk, data=classSetBase$train)
 EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
 
+# popravljena mnozica atributov
 dtExt <- rpart(namembnost ~ ., data=classSetExt$train)
 EvaluateClassModel(dtExt, classSetExt$train, classSetExt$test)
 ```
@@ -302,7 +335,8 @@ EvaluateClassModel(rfExt, classSetExt$train, classSetExt$test)
 
 
 #### Trivialni model
-
+Trivialni model vedno vraca povprecno vrednost ciljne spremenljivke, glede na vse ucne primere.
+Ta model bo predstavljal spodnjo mejo kvalitete ucnih modelov.
 ```{R}
 meanValue <- mean(regSetBase$train$poraba)
 predicted <- rep(meanValue, nrow(regSetBase$test))
@@ -312,10 +346,13 @@ EvaluateTrivialRegModel(observed, predicted)
 ```
 
 #### Linearna regresija
+
 ```{R}
-lmBase <- lm(poraba ~ ., regSetBase$train)
+# osnovna mnozica atributov
+lmBase <- lm(poraba ~ povrsina + leto_izgradnje, regSetBase$train)
 EvaluateRegBaseModel(lmBase, regSetBase$train, regSetBase$test)
 
+# popravljena mnozica atributov
 lmExt <- lm(poraba ~ ., regSetExt$train)
 EvaluateRegExtModel(lmExt, regSetExt$train, regSetExt$test)
 ```
@@ -323,9 +360,11 @@ EvaluateRegExtModel(lmExt, regSetExt$train, regSetExt$test)
 #### Regresijsko drevo
 
 ```{R}
+# osnovna mnozica atributov
 baseModel <- rpart(poraba ~ ., data=regSetBase$train)
 EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 
+# popravljena mnozica atributov
 extModel <- rpart(poraba ~ ., data=regSetExt$train)
 EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
@@ -334,9 +373,11 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 #### Nakljucni gozd
 
 ```{R}
+# osnovna mnozica atributov
 baseModel <- randomForest(poraba ~ ., data=regSetBase$train)
 EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 
+# popravljena mnozica atributov
 extModel <- randomForest(poraba ~ ., data=regSetExt$train)
 EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
@@ -345,19 +386,19 @@ EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 #### Nevronske mreze
 
 ```{R}
+# osnovna mnozica atributov
 baseModel <- nnet(poraba ~ ., regSetBase$train, size=5, decay=0.001, maxit=10000, linout=T)
 EvaluateRegBaseModel(baseModel, regSetBase$train, regSetBase$test)
 
+# popravljena mnozica atributov
 extModel <- nnet(poraba ~ ., regSetExt$train, size=5, decay=0.001, maxit=10000, linout=T)
 EvaluateRegExtModel(extModel, regSetExt$train, regSetExt$test)
 ```
 
 
-## Izboljsava modelov
+## Izboljsava klasifikacijskih modelov
 
-### Klasifikacija
-
-#### Metoda ovojnice
+### Metoda ovojnice
 
 Izboljsava klasifikacijskega modela z izbiro optimalne podmnozice atributov, ki minimizira doloceno oceno.
 ```{R}
@@ -367,7 +408,7 @@ dtBase <- rpart(namembnost ~ povrsina + leto_izgradnje + stavba + datum + regija
 EvaluateClassModel(dtBase, classSetBase$train, classSetBase$test)
 ```
 
-#### Glasovanje
+### Glasovanje
 
 Zgradimo modele z osnovno in popravljeno mnozico atributov:
 ```{R}
@@ -411,7 +452,7 @@ runVoting(modelsDf, classSetExt$test$namembnost)
 ```
 
 
-#### Utezeno glasovanje
+### Utezeno glasovanje
 
 Glasovanje z osnovno mnozico atributov:
 ```{R}
@@ -429,7 +470,7 @@ predRfExt <- predict(rfExt, classSetExt$test, type="prob")
 runWeightedVoting(predDtExt + predKnnExt + predRfExt, classSetExt$test$namembnost)
 ```
 
-#### Bagging
+### Bagging
 
 Bagging z osnovno mnozico atributov:
 ```{R}
@@ -447,7 +488,7 @@ ca <- CA(classSetExt$test$namembnost, predictions$class)
 print(paste("Classification accuracy:", ca))
 ```
 
-#### Boosting
+### Boosting
 
 Boosting z osnovno mnozico atributov:
 ```{R}
@@ -467,28 +508,72 @@ print(paste("Classification accuracy:", ca))
 
 ## Primerjava po regijah
 
-### Klasifikacija
 
-Priprava podatkov.
+### Priprava podatkov
+
+Pripravimo podatke, tako da ucno in testno mnozico razbijemo na dve podmnozici:
+- mnozica ki vsebuje samo primere z vzhodno regijo
+- mnozica ki vsebuje samo primere z zahodno regijo
+
+#### Podatki za klasifikacijo
 ```{R}
 selTrain <- classSetExt$train$regija == "vzhodna"
 selTest <- classSetExt$test$regija == "vzhodna"
 
-extVzhodnaTrain <- classSetExt$train[selTrain,]
-extVzhodnaTest <- classSetExt$test[selTest,]
-extVzhodnaTrain$regija <- NULL
-extVzhodnaTest$regija <- NULL
+classVzhodnaTrain <- classSetExt$train[selTrain,]
+classVzhodnaTest <- classSetExt$test[selTest,]
+classVzhodnaTrain$regija <- NULL
+classVzhodnaTest$regija <- NULL
 
-extZahodnaTrain <- classSetExt$train[!selTrain,]
-extZahodnaTest <- classSetExt$test[!selTest,]
-extZahodnaTrain$regija <- NULL
-extZahodnaTest$regija <- NULL
+classZahodnaTrain <- classSetExt$train[!selTrain,]
+classZahodnaTest <- classSetExt$test[!selTest,]
+classZahodnaTrain$regija <- NULL
+classZahodnaTest$regija <- NULL
+```
+
+#### Podatki za regresijo
+
+```{r}
+selTrain <- regSetExt$train$regija == "vzhodna"
+selTest <- regSetExt$test$regija == "vzhodna"
+
+regVzhodnaTrain <- regSetExt$train[selTrain,]
+regVzhodnaTest <- regSetExt$test[selTest,]
+regVzhodnaTrain$regija <- NULL
+regVzhodnaTest$regija <- NULL
+
+regZahodnaTrain <- regSetExt$train[!selTrain,]
+regZahodnaTest <- regSetExt$test[!selTest,]
+regZahodnaTrain$regija <- NULL
+regZahodnaTest$regija <- NULL
+```
+
+### Evalvacija
+
+#### Klasifikacija
+
+Zgradimo nekaj klasifikacijskih modelov, ki se ucijo iz posamezne podmnozice, ter vsakega posebej se ocenimo glede na testne primere iz ustrezne testne mnozice.
+
+```{R}
+runClassification(namembnost ~ ., classVzhodnaTrain, classVzhodnaTest)
 ```
 
 ```{R}
-runClassification(namembnost ~ ., extVzhodnaTrain, extVzhodnaTest)
+runClassification(namembnost ~ ., classZahodnaTrain, classZahodnaTest)
+```
+
+#### Regresija
+
+Zgradimo nekaj regresijskih modelov, ki se ucijo iz posamezne podmnozice, ter vsakega posebej se ocenimo glede na testne primere iz ustrezne testne mnozice.
+
+```{R}
+runRegression(poraba ~ ., regVzhodnaTrain, regVzhodnaTest)
 ```
 
 ```{R}
-runClassification(namembnost ~ ., extZahodnaTrain, extZahodnaTest)
+runRegression(poraba ~ ., regZahodnaTrain, regZahodnaTest)
 ```
+
+### Ugotovitve
+
+Opazimo, da je klasifikacijska in regresijska napoved obcutno uspesnejsa za primere iz podmnozice podatkov z vzhodno regijo.
