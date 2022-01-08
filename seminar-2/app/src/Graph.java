@@ -10,4 +10,16 @@ public class Graph {
         this.adjacencyMatrix = adjacencyMatrix;
         this.treasures = treasures;
     }
+
+    int getTotalEdges() {
+        int count = 0;
+        for (int[] matrix : this.adjacencyMatrix) {
+            for (int i : matrix) {
+                if (i > 0) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
 }

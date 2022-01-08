@@ -32,20 +32,10 @@ class UtilsTest {
     @Test
     void testLabyrinthToGraph() {
         Graph graph = Utils.labyrinthToGraph(labyrinth);
-        int[][] expectedAdjacencyMatrix = new int[][]{
-                {0, 3, 0, 1, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 3, 0, 0, 1, 0, 0, 0},
-                {0, 0, 0, 0, 0, 5, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 1, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 5, 0, 0},
-                {0, 0, 0, 0, 1, 0, 0, 0},
-        };
 
         assertEquals(0, graph.start);
         assertEquals(7, graph.end);
+        assertEquals(16, graph.getTotalEdges());
         assertArrayEquals(new Integer[]{2,6}, graph.treasures);
-        assertArrayEquals(expectedAdjacencyMatrix, graph.adjacencyMatrix);
     }
 }

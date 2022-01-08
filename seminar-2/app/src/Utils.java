@@ -116,6 +116,10 @@ public class Utils {
         return new Pair<>(nodeCount, map);
     }
 
+    /**
+     * Sets adjacency matrix values.
+     * Note that if a given edge has zero cost, value in adjacency matrix will equal to 1.
+     */
     static void setAdjacentNodes(int[][] graph, int srcIndex, int srcNode, int destIndex, int destNode) {
         // destination node is a wall, ignore it
         if (destIndex == - 1) {
@@ -123,22 +127,22 @@ public class Utils {
         }
         // end, start or treasure nodes have no cost
         if (isZeroCostNode(srcNode) && isZeroCostNode(destNode)) {
-            graph[srcIndex][destIndex] = 0;
-            graph[destIndex][srcIndex] = 0;
+            graph[srcIndex][destIndex] = 1;
+            graph[destIndex][srcIndex] = 1;
         }
         else if (isZeroCostNode(srcNode)) {
-            graph[destIndex][srcIndex] = 0;
-            graph[srcIndex][destIndex] = destNode;
+            graph[destIndex][srcIndex] = 1;
+            graph[srcIndex][destIndex] = destNode + 1;
         }
         else if (isZeroCostNode(destNode)) {
-            graph[destIndex][srcIndex] = srcNode;
-            graph[srcIndex][destIndex] = 0;
+            graph[destIndex][srcIndex] = srcNode + 1;
+            graph[srcIndex][destIndex] = 1;
         }
         // If the destination node isn't a wall (-1), set adjacency matrix accordingly.
         else if (destNode != -1) {
             // Because this is undirected graph, set values in both ways.
-            graph[srcIndex][destIndex] = destNode;
-            graph[destIndex][srcIndex] = srcNode;
+            graph[srcIndex][destIndex] = destNode + 1;
+            graph[destIndex][srcIndex] = srcNode + 1;
         }
     }
 
