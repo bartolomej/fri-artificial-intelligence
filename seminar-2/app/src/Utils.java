@@ -1,11 +1,55 @@
 import org.javatuples.Pair;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Utils {
+
+    static void writeToFile(String path, String data) throws IOException {
+        File f = new File(path);
+        boolean success = f.createNewFile();
+        assert success;
+        FileWriter fileWriter = new FileWriter(path);
+        PrintWriter printWriter = new PrintWriter(fileWriter);
+        printWriter.print(data);
+        printWriter.close();
+    }
+
+    static String serializeArray(Integer[] array) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < array.length; i++) {
+            s.append(array[i]);
+            if (i < array.length - 1) {
+                s.append(",");
+            }
+        }
+        return s.toString();
+    }
+
+    static String serializeMatrix(int[][] matrix) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                s.append(matrix[i][j]);
+                s.append(",");
+            }
+        }
+        // remove last ","
+        return s.delete(s.length() - 1, s.length()).toString();
+    }
+
+    static String serializeMatrix(Integer[][] matrix) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                s.append(matrix[i][j]);
+                s.append(",");
+            }
+        }
+        // remove last ","
+        return s.delete(s.length() - 1, s.length()).toString();
+    }
 
     /**
      * Reads an input file containing labyrinth matrix.
@@ -120,7 +164,7 @@ public class Utils {
      * Sets adjacency matrix values.
      * Note that if a given edge has zero cost, value in adjacency matrix will equal to 1.
      */
-    static void setAdjacentNodes(int[][] graph, int srcIndex, int srcNode, int destIndex, int destNode) {
+    private static void setAdjacentNodes(int[][] graph, int srcIndex, int srcNode, int destIndex, int destNode) {
         // destination node is a wall, ignore it
         if (destIndex == - 1) {
             return;
@@ -146,8 +190,7 @@ public class Utils {
         }
     }
 
-    static boolean isZeroCostNode(int node) {
+    private static boolean isZeroCostNode(int node) {
         return node == -4 || node == -3 || node == -2;
     }
-
 }

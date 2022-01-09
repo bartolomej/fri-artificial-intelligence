@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>Labyrinth</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<style>
+
+    * {
+        margin: 0;
+    }
+
+    html, body, #root, table, tbody {
+        height: 100%;
+        width: 100%;
+    }
+
+    table {
+        border-collapse: collapse;
+    }
+
+    td {
+        text-align: center;
+        border: 0;
+        color: black;
+        font-size: 20px;
+        font-family: Monaco, serif;
+        position: relative;
+    }
+
+    /** NODE EDGES **/
+
+    td > * {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        margin: 2px;
+    }
+
+    td > .left {
+        left: 0;
+        top: 0;
+        bottom: 0;
+    }
+
+    td > .right {
+        right: 0;
+        top: 0;
+        bottom: 0;
+    }
+
+    td > .bottom {
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    td > .top {
+        top: 0;
+        left: 0;
+        right: 0;
+    }
+
+    /** NODE TYPES **/
+
+    td.wall {
+        background: black;
+    }
+
+    td.treasure {
+        background: yellow;
+    }
+
+    td.start {
+        background: red;
+    }
+
+    td.end {
+        background: green;
+    }
+
+    td.hallway {
+        background: grey;
+    }
+</style>
+<script type="text/babel">
+
+    async function fetchTextFile(path) {
+        return fetch(path).then(res => res.text());
+    }
+
+    async function fetchTextFiles(paths = []) {
+        return Promise.all(paths.map(fetchTextFile))
+    }
+
+    function deserializeMatrix(m, n) {
+        n = n || Math.round(Math.sqrt(m.length))
+        const matrix = [];
+        while (m.length > 0) {
+            matrix.push(m.splice(0, n));
+        }
+        return matrix;
+    }
+
+    function parseGraph(data) {
+        const pairs = data.replace(/Graph{/, "").replace("}", "").split(", ");
+        const graph = pairs
+            .map(pair => pair.split("="))
+            .map(([key, value]) => {
+                const split = value.split(",").map(Number);
+                return {[key]: split.length > 1 ? split : split[0]}
+            })
+            .reduce((p, c) => ({...p, ...c}));
+        graph.matrix = deserializeMatrix(graph.matrix, graph.nodes);
+        return graph;
+    }
+
+    function parseLabyrinth(data) {
+        return data.trim().split("\n").map(row => row.trim().split(",").map(Number));
+    }
+
+    function parseNodeIndexMap(data) {
+        return deserializeMatrix(data.trim().split(",").map(Number))
+    }
+
+    async function fetchData(n) {
+        const data = await fetchTextFiles([
+            `../data/labyrinth_${n}.txt`,
+            `../graphs/labyrinth_${n}.txt`,
+            `../maps/labyrinth_${n}.txt`
+        ])
+        return {
+            labyrinth: parseLabyrinth(data[0]),
+            graph: parseGraph(data[1]),
+            indexMap: parseNodeIndexMap(data[2])
+        };
+    }
+
+    function valueToNodeType(value) {
+        const map = {
+            "-1": "wall",
+            "-2": "start",
+            "-3": "treasure",
+            "-4": "end"
+        };
+        if (map[value]) {
+            return map[value];
+        } else {
+            return "hallway"; // TODO: extend for different weights
+        }
+    }
+
+    function App() {
+        const [labyrinth, setLabyrinth] = React.useState();
+        const [graph, setGraph] = React.useState();
+        const [indexMap, setIndexMap] = React.useState();
+
+        React.useEffect(() => {
+            fetchData("1").then(({labyrinth, graph, indexMap}) => {
+                setLabyrinth(labyrinth);
+                setGraph(graph);
+                setIndexMap(indexMap);
+                window.graph = graph;
+            })
+        }, []);
+
+        let nodeIndex = -1;
+        const w = (i1, j1, i2, j2) => {
+            const i = indexMap[i1][j1];
+            const j = indexMap[i2][j2];
+            if (i < 0 || j < 0) {
+                return null;
+            }
+            return graph.matrix[i][j];
+        }
+
+        return (
+            <table>
+                <tbody>
+                {indexMap && graph && labyrinth && labyrinth.map((row, i) => (
+                    <tr key={i}>
+                        {row.map((node, j) => {
+                            if (node !== -1) {
+                                nodeIndex++;
+                                const lw = w(i, j, i, j - 1);
+                                const tw = w(i, j, i - 1, j);
+                                const rw = w(i, j, i, j + 1);
+                                const bw = w(i, j, i + 1, j);
+                                return (
+                                    <td className={valueToNodeType(node)} key={j}>
+                                        {nodeIndex}
+                                        <span className="left">{lw}</span>
+                                        <span className="top">{tw}</span>
+                                        <span className="right">{rw}</span>
+                                        <span className="bottom">{bw}</span>
+                                    </td>
+                                );
+                            } else {
+                                return <td className={valueToNodeType(node)} key={j}>--</td>
+                            }
+                        })}
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        )
+    }
+
+    ReactDOM.render(<App/>, document.getElementById('root'));
+
+</script>
+</body>
+</html>

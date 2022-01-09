@@ -1,12 +1,14 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 
 public class Search {
 
-    public static void search(int[][] graph, int startNode, ArrayList<Integer> endNodes) {
+    public static Integer[] search(int[][] graph, int startNode, int endNode) {
         boolean[] marked = new boolean[graph.length];
         int[] from = new int[graph.length];
+        ArrayList<Integer> path = new ArrayList<>();
 
         Queue<Integer> queue = new LinkedList<Integer>();
 
@@ -14,25 +16,22 @@ public class Search {
         from[startNode] = -1;
 
         queue.add(startNode);
-        System.out.println("Dajem v vrsto vozlisce " + startNode);
 
         while (!queue.isEmpty()) {
             int curNode = queue.remove();
-            System.out.println("Odstranjujem iz vrste vozlisce " + curNode);
 
-            if (endNodes.contains(curNode)) {
-                System.out.println("Resitev BFS v vozliscu " + curNode);
-                System.out.print("Pot: " + curNode);
+            if (curNode == endNode) {
+                path.add(curNode);
 
                 while (true) {
                     curNode = from[curNode];
                     if (curNode != -1)
-                        System.out.print(" <-- " + curNode);
+                        path.add(curNode);
                     else
                         break;
                 }
 
-                return;
+                break;
             }
 
             for (int nextNode = 0; nextNode < graph[curNode].length; nextNode++) {
@@ -40,9 +39,19 @@ public class Search {
                     marked[nextNode] = true;
                     from[nextNode] = curNode;
                     queue.add(nextNode);
-
-                    System.out.println("Dajem v vrsto vozlisce " + nextNode);
                 }
+            }
+        }
+        Collections.reverse(path);
+        return path.toArray(new Integer[0]);
+    }
+
+    static void printPath(Integer[] path) {
+        for (int i = 0; i < path.length; i++) {
+            if (i < path.length -1) {
+                System.out.printf("%d --> ", path[i]);
+            } else {
+                System.out.printf("%d\n", path[i]);
             }
         }
     }
@@ -56,10 +65,6 @@ public class Search {
                 {-1, -1, -1, -1, -1}
         };
         Graph graph = Utils.labyrinthToGraph(labyrinth);
-        ArrayList<Integer> endNodes = new ArrayList<Integer>();
-        endNodes.add(graph.end);
-
-        Search.search(graph.adjacencyMatrix, graph.start, endNodes);
-
+        Integer[] path = Search.search(graph.adjacencyMatrix, graph.start, graph.end);
     }
 }
