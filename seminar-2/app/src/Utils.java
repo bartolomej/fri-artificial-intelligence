@@ -2,6 +2,7 @@ import org.javatuples.Pair;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Utils {
@@ -121,6 +122,9 @@ public class Utils {
         Integer[][] indexMap = mapPair.getValue1();
 
         int[][] graph = new int[nodeCount][nodeCount];
+        for (int[] row : graph) {
+            Arrays.fill(row, -1);  // -1 = no edge between nodes
+        }
         ArrayList<Integer> treasures = new ArrayList<>();
         int startNodeIndex = 0;
         int endNodeIndex = 0;
@@ -192,10 +196,9 @@ public class Utils {
      */
     private static void setAdjacentNodes(int[][] graph, int srcIndex, int srcNode, int destIndex, int destNode) {
         // destination node is a wall, ignore it
-        if (destIndex == - 1) {
+        if (destIndex == -1) {
             return;
         }
-        graph[srcIndex][srcIndex] = Integer.MAX_VALUE;
         // end, start or treasure nodes have no cost
         if (isZeroCostNode(srcNode) && isZeroCostNode(destNode)) {
             graph[srcIndex][destIndex] = 1;
@@ -203,17 +206,17 @@ public class Utils {
         }
         else if (isZeroCostNode(srcNode)) {
             graph[destIndex][srcIndex] = 1;
-            graph[srcIndex][destIndex] = destNode + 1;
+            graph[srcIndex][destIndex] = destNode;
         }
         else if (isZeroCostNode(destNode)) {
-            graph[destIndex][srcIndex] = srcNode + 1;
+            graph[destIndex][srcIndex] = srcNode;
             graph[srcIndex][destIndex] = 1;
         }
         // If the destination node isn't a wall (-1), set adjacency matrix accordingly.
         else if (destNode != -1) {
             // Because this is undirected graph, set values in both ways.
-            graph[srcIndex][destIndex] = destNode + 1;
-            graph[destIndex][srcIndex] = srcNode + 1;
+            graph[srcIndex][destIndex] = destNode;
+            graph[destIndex][srcIndex] = srcNode;
         }
     }
 

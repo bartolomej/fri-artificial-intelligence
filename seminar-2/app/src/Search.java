@@ -35,7 +35,7 @@ public class Search {
             }
 
             for (int nextNode = 0; nextNode < graph[curNode].length; nextNode++) {
-                if (graph[curNode][nextNode] >= 1 && !marked[nextNode]) {
+                if (graph[curNode][nextNode] >= 0 && !marked[nextNode]) {
                     marked[nextNode] = true;
                     from[nextNode] = curNode;
                     queue.add(nextNode);

@@ -22,14 +22,14 @@ public class TSP {
         while (path.peek() != graph.end) {
             int node = path.peek();
             int min = -1;
-            for (int n = 0; n < graph.matrix[    node].length; n++) {
+            for (int n = 0; n < graph.matrix[node].length; n++) {
                 int nWeight = graph.matrix[node][n];
                 int minWeight = min >= 0 ? graph.matrix[node][min] : Integer.MAX_VALUE;
 
                 if (visited.size() < graph.nodes - 1 && n == graph.end) {
                     continue;
                 }
-                if (nWeight > 0 && nWeight < minWeight && !visited.contains(n)) {
+                if (nWeight >= 0 && nWeight < minWeight && !visited.contains(n)) {
                     min = n;
                 }
             }

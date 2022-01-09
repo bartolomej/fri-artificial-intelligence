@@ -8,12 +8,10 @@ public class Main {
     static char[] allN = new char[]{'1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
     public static void main(String[] args) throws Exception {
-        // TODO: remove mock
-        args = new String[]{"*"};
-
-        if (args.length != 1) {
-            throw new Exception("Invalid arguments");
+        if (args.length == 0) {
+            args = new String[]{"*"}; // default value
         }
+
         String[] list = args[0].split(",");
         for (String n : list) {
             char cn = n.charAt(0);
@@ -22,19 +20,6 @@ public class Main {
             } else if (cn == '*') {
                 solveAll();
             }
-        }
-    }
-
-    static void storeMetadata() throws IOException {
-        for (char n : allN) {
-            String inPath = String.format("./data/labyrinth_%c.txt", n);
-            Integer[][] labyrinth = Utils.readLabyrinthFile(inPath);
-            Graph graph = Utils.labyrinthToGraph(labyrinth);
-            String graphPath = String.format("./graphs/labyrinth_%c.txt", n);
-            Utils.writeToFile(graphPath, graph.toString());
-            String mapPath = String.format("./maps/labyrinth_%c.txt", n);
-            Pair<Integer, Integer[][]> nodeIndexMap = Utils.labyrinthToNodeIndexMap(labyrinth);
-            Utils.writeToFile(mapPath, Utils.serializeMatrix(nodeIndexMap.getValue1()));
         }
     }
 
@@ -94,6 +79,9 @@ public class Main {
         // adjacency matrix of subgraph has unchanged dimensions,
         // which is not optimal for space complexity, but I ain't got time for this :)
         int[][] adjacencyMatrix = new int[graph.matrix.length][graph.matrix[0].length];
+        for (int[] row : adjacencyMatrix) {
+            Arrays.fill(row, -1);  // -1 = no edge between nodes
+        }
         Map<String, Integer[]> pathMap = new HashMap<>();
         for (Integer[] path : paths) {
             int start = path[0];
@@ -120,5 +108,18 @@ public class Main {
             }
         }
         return paths.toArray(new Integer[0][0]);
+    }
+
+    static void storeMetadata() throws IOException {
+        for (char n : allN) {
+            String inPath = String.format("./data/labyrinth_%c.txt", n);
+            Integer[][] labyrinth = Utils.readLabyrinthFile(inPath);
+            Graph graph = Utils.labyrinthToGraph(labyrinth);
+            String graphPath = String.format("./graphs/labyrinth_%c.txt", n);
+            Utils.writeToFile(graphPath, graph.toString());
+            String mapPath = String.format("./maps/labyrinth_%c.txt", n);
+            Pair<Integer, Integer[][]> nodeIndexMap = Utils.labyrinthToNodeIndexMap(labyrinth);
+            Utils.writeToFile(mapPath, Utils.serializeMatrix(nodeIndexMap.getValue1()));
+        }
     }
 }
