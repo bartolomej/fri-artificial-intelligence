@@ -33,9 +33,27 @@
         position: relative;
     }
 
+    td > .wrapper {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    td span.path {
+        width: 50%;
+        height: 50%;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
     /** NODE EDGES **/
 
-    td > * {
+    td > .left, td > .right, td > .top, td > .bottom {
         position: absolute;
         display: flex;
         align-items: center;
@@ -130,16 +148,30 @@
         return deserializeMatrix(data.trim().split(",").map(Number))
     }
 
+    async function fetchPaths(n) {
+        const algorithms = [
+            'greedy',
+            'local'
+        ];
+        const data = await fetchTextFiles(algorithms.map(algo => `../paths/labyrinth_${n}_${algo}.txt`));
+        return data.map((path, index) => ({
+            path: path.split(",").map(Number),
+            name: algorithms[index]
+        }))
+    }
+
     async function fetchData(n) {
         const data = await fetchTextFiles([
             `../data/labyrinth_${n}.txt`,
             `../graphs/labyrinth_${n}.txt`,
             `../maps/labyrinth_${n}.txt`
-        ])
+        ]);
+        const paths = await fetchPaths(n);
         return {
             labyrinth: parseLabyrinth(data[0]),
             graph: parseGraph(data[1]),
-            indexMap: parseNodeIndexMap(data[2])
+            indexMap: parseNodeIndexMap(data[2]),
+            paths
         };
     }
 
@@ -161,12 +193,16 @@
         const [labyrinth, setLabyrinth] = React.useState();
         const [graph, setGraph] = React.useState();
         const [indexMap, setIndexMap] = React.useState();
+        const [paths, setPaths] = React.useState();
+        const [currentPath, setCurrentPath] = React.useState(1);
 
         React.useEffect(() => {
-            fetchData("1").then(({labyrinth, graph, indexMap}) => {
+            fetchData("1").then(({labyrinth, graph, indexMap, paths}) => {
                 setLabyrinth(labyrinth);
                 setGraph(graph);
                 setIndexMap(indexMap);
+                setPaths(paths);
+                console.log(paths)
                 window.graph = graph;
             })
         }, []);
@@ -181,10 +217,12 @@
             return graph.matrix[i][j];
         }
 
+        let path = paths ? paths[currentPath].path : [];
+
         return (
             <table>
                 <tbody>
-                {indexMap && graph && labyrinth && labyrinth.map((row, i) => (
+                {paths && indexMap && graph && labyrinth && labyrinth.map((row, i) => (
                     <tr key={i}>
                         {row.map((node, j) => {
                             if (node !== -1) {
@@ -193,9 +231,16 @@
                                 const tw = w(i, j, i - 1, j);
                                 const rw = w(i, j, i, j + 1);
                                 const bw = w(i, j, i + 1, j);
+                                const isInPath = !!path.find(e => e === nodeIndex)
                                 return (
                                     <td className={valueToNodeType(node)} key={j}>
-                                        {nodeIndex}
+                                        <div className="wrapper">
+                                            {isInPath ? (
+                                                <span className="path">{nodeIndex}</span>
+                                            ) : (
+                                                <>{nodeIndex}</>
+                                            )}
+                                        </div>
                                         <span className="left">{lw}</span>
                                         <span className="top">{tw}</span>
                                         <span className="right">{rw}</span>

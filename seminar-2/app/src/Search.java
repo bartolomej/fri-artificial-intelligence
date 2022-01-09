@@ -46,16 +46,6 @@ public class Search {
         return path.toArray(new Integer[0]);
     }
 
-    static void printPath(Integer[] path) {
-        for (int i = 0; i < path.length; i++) {
-            if (i < path.length -1) {
-                System.out.printf("%d --> ", path[i]);
-            } else {
-                System.out.printf("%d\n", path[i]);
-            }
-        }
-    }
-
     public static void main(String[] args) {
         Integer[][] labyrinth = new Integer[][]{
                 {-1, -1, -1, -1, -1},

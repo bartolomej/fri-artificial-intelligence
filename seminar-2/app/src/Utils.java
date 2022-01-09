@@ -6,6 +6,28 @@ import java.util.Scanner;
 
 public class Utils {
 
+    static int random(int min, int max) {
+        return (int)Math.round((Math.random() * (max - min) + min));
+    }
+
+    static String arrayJoin(Object[] array, String delimiter) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < array.length; i++) {
+            if (i < array.length -1) {
+                out.append(String.format("%s%s", array[i], delimiter));
+            } else {
+                out.append(String.format("%s", array[i]));
+            }
+        }
+        return out.toString();
+    }
+
+    static void swap(Object[] array, int a, int b) {
+        Object temp = array[a];
+        array[a] = array[b];
+        array[b] = temp;
+    }
+
     static void writeToFile(String path, String data) throws IOException {
         File f = new File(path);
         boolean success = f.createNewFile();

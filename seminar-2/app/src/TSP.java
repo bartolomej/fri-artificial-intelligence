@@ -38,4 +38,29 @@ public class TSP {
         }
         return path.toArray(new Integer[0]);
     }
+
+    /**
+     * Find a better solution by applying a single change to a known solution.
+     *
+     * 1. Select a path at random.
+     * 2. Select two edges at random
+     * 3. If swapping results in an improvement, keep the new path
+     */
+    public static Integer[] localSearch(Graph graph, int repetitions) {
+        // TODO: replace with random path
+        Integer[] path = greedy(graph);
+        int cost = graph.getPathCost(path);
+        for (int i = 0; i < repetitions; i++) {
+            Integer[] newPath = Arrays.copyOf(path, path.length);
+            int v1 = Utils.random(1, newPath.length - 2);
+            int v2 = Utils.random(1, newPath.length - 2);
+            Utils.swap(newPath, v1, v2);
+            int newCost = graph.getPathCost(newPath);
+            if (newCost < cost) {
+                cost = newCost;
+                path = newPath;
+            }
+        }
+        return path;
+    }
 }

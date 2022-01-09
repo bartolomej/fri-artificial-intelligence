@@ -1,8 +1,7 @@
 import org.javatuples.Pair;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Main {
 
@@ -10,7 +9,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         // TODO: remove mock
-        args = new String[]{"1"};
+        args = new String[]{"*"};
 
         if (args.length != 1) {
             throw new Exception("Invalid arguments");
@@ -50,22 +49,62 @@ public class Main {
         Integer[][] labyrinth = Utils.readLabyrinthFile(filePath);
         Graph graph = Utils.labyrinthToGraph(labyrinth);
         Integer[][] paths = computePossiblePaths(graph);
-        Graph subgraph = generateSubgraph(graph, paths);
-        Integer[] path = TSP.greedy(subgraph);
-        Search.printPath(path);
+        // probably not the nicest solution, consider refactoring :)
+        Pair<Graph, Map<String, Integer[]>> subgraphTuple = generateSubgraph(graph, paths);
+        Graph subgraph = subgraphTuple.getValue0();
+        Map<String, Integer[]> edgeVerticesToPathMap = subgraphTuple.getValue1();
+
+        Integer[] greedyPath = TSP.greedy(subgraph);
+        Integer[] greedyFullPath = buildFullPath(edgeVerticesToPathMap, greedyPath);
+        System.out.printf("GREEDY (cost=%d, path=%s)\n", subgraph.getPathCost(greedyPath), Utils.arrayJoin(greedyFullPath, ","));
+        Utils.writeToFile(String.format("./paths/labyrinth_%c_greedy.txt", n), Utils.arrayJoin(greedyFullPath, ","));
+
+        Integer[] localOptimumPath = TSP.localSearch(subgraph, 1000000);
+        Integer[] localOptimumFullPath = buildFullPath(edgeVerticesToPathMap, localOptimumPath);
+        System.out.printf("LOCAL OPTIMUM (cost=%d, path=%s)\n", subgraph.getPathCost(localOptimumPath), Utils.arrayJoin(localOptimumFullPath, ","));
+        Utils.writeToFile(String.format("./paths/labyrinth_%c_local.txt", n), Utils.arrayJoin(localOptimumFullPath, ","));
+
+        System.out.println();
     }
 
-    static Graph generateSubgraph(Graph graph, Integer[][] paths) {
-        // TODO: better calculate matrix dimensions, this is not optimal
+    static Integer[] buildFullPath(Map<String, Integer[]> edgeVerticesMap, Integer[] path) {
+        List<Integer> fullPath = new ArrayList<>();
+        for (int i = 1; i < path.length; i++) {
+            Integer[] subPath = getFullPath(edgeVerticesMap, path[i - 1], path[i]);
+            fullPath.addAll(Arrays.asList(subPath));
+        }
+        return fullPath.toArray(new Integer[0]);
+    }
+
+    static Integer[] getFullPath(Map<String, Integer[]> edgeVerticesMap, int start, int end) {
+        String key = String.format("%d,%d", start, end);
+        if (edgeVerticesMap.containsKey(key)) {
+            return edgeVerticesMap.get(key);
+        }
+        String keyReversed = String.format("%d,%d", end, start);
+        if (edgeVerticesMap.containsKey(keyReversed)) {
+            Integer[] path = edgeVerticesMap.get(keyReversed);
+            Collections.reverse(Arrays.asList(path));
+            return path;
+        }
+        return null;
+    }
+
+    static Pair<Graph, Map<String, Integer[]>> generateSubgraph(Graph graph, Integer[][] paths) {
+        // adjacency matrix of subgraph has unchanged dimensions,
+        // which is not optimal for space complexity, but I ain't got time for this :)
         int[][] adjacencyMatrix = new int[graph.matrix.length][graph.matrix[0].length];
+        Map<String, Integer[]> pathMap = new HashMap<>();
         for (Integer[] path : paths) {
             int start = path[0];
             int end = path[path.length - 1];
             int cost = graph.getPathCost(path);
             adjacencyMatrix[start][end] = cost;
             adjacencyMatrix[end][start] = cost;
+            pathMap.put(String.format("%d,%d", start, end), path);
         }
-        return new Graph(graph.start, graph.end, adjacencyMatrix, graph.mustVisit, graph.mustVisit.length + 2);
+        Graph subgraph = new Graph(graph.start, graph.end, adjacencyMatrix, graph.mustVisit, graph.mustVisit.length + 2);
+        return new Pair<>(subgraph, pathMap);
     }
 
     static Integer[][] computePossiblePaths(Graph graph) {
