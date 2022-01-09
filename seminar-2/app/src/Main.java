@@ -54,12 +54,12 @@ public class Main {
         Integer[] greedyPath = TSP.greedy(subgraph);
         Integer[] greedyFullPath = buildFullPath(edgeVerticesToPathMap, greedyPath);
         System.out.printf("GREEDY (cost=%d, path=%s)\n", subgraph.getPathCost(greedyPath), Utils.arrayJoin(greedyFullPath, ","));
-        Utils.writeToFile(String.format("./paths/labyrinth_%c_greedy.txt", n), Utils.arrayJoin(greedyFullPath, ","));
+        Utils.writeToFile(String.format("./paths/labyrinth_%c_%s_greedy.txt", n, searchAlgorithm), Utils.arrayJoin(greedyFullPath, ","));
 
         Integer[] localOptimumPath = TSP.localSearch(subgraph, 1000000);
         Integer[] localOptimumFullPath = buildFullPath(edgeVerticesToPathMap, localOptimumPath);
         System.out.printf("LOCAL OPTIMUM (cost=%d, path=%s)\n", subgraph.getPathCost(localOptimumPath), Utils.arrayJoin(localOptimumFullPath, ","));
-        Utils.writeToFile(String.format("./paths/labyrinth_%c_local.txt", n), Utils.arrayJoin(localOptimumFullPath, ","));
+        Utils.writeToFile(String.format("./paths/labyrinth_%c_%s_local.txt", n, searchAlgorithm), Utils.arrayJoin(localOptimumFullPath, ","));
 
         System.out.println();
     }

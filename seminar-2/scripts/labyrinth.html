@@ -107,6 +107,13 @@
     td.hallway {
         background: grey;
     }
+
+    .controls {
+        padding: 20px;
+    }
+    .controls > * {
+        margin-right: 20px;
+    }
 </style>
 <script type="text/babel">
 
@@ -149,14 +156,23 @@
     }
 
     async function fetchPaths(n) {
-        const algorithms = [
+        const tspAlgos = [
             'greedy',
             'local'
         ];
-        const data = await fetchTextFiles(algorithms.map(algo => `../paths/labyrinth_${n}_${algo}.txt`));
+        const searchAlgos = [
+            "dfs",
+            "bfs"
+        ]
+        const list = searchAlgos.map(searchAlgo => (
+            tspAlgos.map(algo => ({tspAlgo: algo, searchAlgo}))
+        )).flat();
+        const data = await fetchTextFiles(
+            list.map(({tspAlgo, searchAlgo}) => `../paths/labyrinth_${n}_${searchAlgo}_${tspAlgo}.txt`)
+        );
         return data.map((path, index) => ({
             path: path.split(",").map(Number),
-            name: algorithms[index]
+            ...list[index]
         }))
     }
 
@@ -190,22 +206,33 @@
     }
 
     function App() {
+        const [n, setN] = React.useState(2);
         const [labyrinth, setLabyrinth] = React.useState();
         const [graph, setGraph] = React.useState();
         const [indexMap, setIndexMap] = React.useState();
         const [paths, setPaths] = React.useState();
-        const [currentPath, setCurrentPath] = React.useState(1);
+        const [loading, setLoading] = React.useState(true);
+        const [showEdgeWeights, setShowEdgeWeights] = React.useState(false);
+        const [showNodeIndex, setShowNodeIndex] = React.useState(true);
+        const [tspMethod, setTspMethod] = React.useState('greedy');
+        const [searchMethod, setSearchMethod] = React.useState('bfs');
 
         React.useEffect(() => {
-            fetchData("1").then(({labyrinth, graph, indexMap, paths}) => {
+            setLoading(true);
+            fetchData(n, searchMethod).then(({labyrinth, graph, indexMap, paths}) => {
                 setLabyrinth(labyrinth);
                 setGraph(graph);
                 setIndexMap(indexMap);
                 setPaths(paths);
-                console.log(paths)
                 window.graph = graph;
+            }).finally(() => {
+                setLoading(false);
             })
-        }, []);
+        }, [n]);
+
+        if (loading) {
+            return "Loading ..."
+        }
 
         let nodeIndex = -1;
         const w = (i1, j1, i2, j2) => {
@@ -217,44 +244,87 @@
             return graph.matrix[i][j];
         }
 
-        let path = paths ? paths[currentPath].path : [];
+        let {path} = paths ? paths.find(p => p.tspAlgo === tspMethod && p.searchAlgo === searchMethod) : {};
 
         return (
-            <table>
-                <tbody>
-                {paths && indexMap && graph && labyrinth && labyrinth.map((row, i) => (
-                    <tr key={i}>
-                        {row.map((node, j) => {
-                            if (node !== -1) {
-                                nodeIndex++;
-                                const lw = w(i, j, i, j - 1);
-                                const tw = w(i, j, i - 1, j);
-                                const rw = w(i, j, i, j + 1);
-                                const bw = w(i, j, i + 1, j);
-                                const isInPath = !!path.find(e => e === nodeIndex)
-                                return (
-                                    <td className={valueToNodeType(node)} key={j}>
-                                        <div className="wrapper">
-                                            {isInPath ? (
-                                                <span className="path">{nodeIndex}</span>
-                                            ) : (
-                                                <>{nodeIndex}</>
+            <>
+                <table>
+                    <tbody>
+                    {path && indexMap && graph && labyrinth && labyrinth.map((row, i) => (
+                        <tr key={i}>
+                            {row.map((node, j) => {
+                                if (node !== -1) {
+                                    nodeIndex++;
+                                    const lw = w(i, j, i, j - 1);
+                                    const tw = w(i, j, i - 1, j);
+                                    const rw = w(i, j, i, j + 1);
+                                    const bw = w(i, j, i + 1, j);
+                                    const isInPath = !!path.find(e => e === nodeIndex)
+                                    return (
+                                        <td className={valueToNodeType(node)} key={j}>
+                                            <div className="wrapper">
+                                                {isInPath ? (
+                                                    <span className="path">{showNodeIndex ? nodeIndex : ''}</span>
+                                                ) : (
+                                                    <>{showNodeIndex ? nodeIndex : ''}</>
+                                                )}
+                                            </div>
+                                            {showEdgeWeights && (
+                                                <>
+                                                    <span className="left">{lw}</span>
+                                                    <span className="top">{tw}</span>
+                                                    <span className="right">{rw}</span>
+                                                    <span className="bottom">{bw}</span>
+                                                </>
                                             )}
-                                        </div>
-                                        <span className="left">{lw}</span>
-                                        <span className="top">{tw}</span>
-                                        <span className="right">{rw}</span>
-                                        <span className="bottom">{bw}</span>
-                                    </td>
-                                );
-                            } else {
-                                return <td className={valueToNodeType(node)} key={j}>--</td>
-                            }
-                        })}
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+                                        </td>
+                                    );
+                                } else {
+                                    return <td className={valueToNodeType(node)} key={j}>--</td>
+                                }
+                            })}
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+
+                <div className="controls">
+                    <label>
+                        Labyrinth:
+                        <select value={n} onChange={e => setN(+e.target.value)}>
+                            {Array.from({length: 9}).map((e, i) => (
+                                <option value={i + 1} key={i}>{i + 1}</option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <label>
+                        TSP method:
+                        <select value={tspMethod} onChange={e => setTspMethod(e.target.value)}>
+                            <option value="greedy">Greedy</option>
+                            <option value="local">Local optimisation</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Search method:
+                        <select value={searchMethod} onChange={e => setSearchMethod(e.target.value)}>
+                            <option value="bfs">Breath first</option>
+                            <option value="dfs">Depth first</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Show edge weights:
+                        <input type="checkbox" value={showEdgeWeights} onChange={e => setShowEdgeWeights(!showEdgeWeights)} />
+                    </label>
+
+                    <label>
+                        Show node index:
+                        <input type="checkbox" value={showNodeIndex} onChange={e => setShowNodeIndex(!showNodeIndex)} />
+                    </label>
+                </div>
+            </>
         )
     }
 
