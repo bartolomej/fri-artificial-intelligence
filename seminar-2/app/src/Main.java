@@ -1,6 +1,5 @@
 import org.javatuples.Pair;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +10,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         // TODO: remove mock
-        args = new String[]{"*"};
+        args = new String[]{"1"};
 
         if (args.length != 1) {
             throw new Exception("Invalid arguments");
@@ -52,14 +51,13 @@ public class Main {
         Graph graph = Utils.labyrinthToGraph(labyrinth);
         Integer[][] paths = computePossiblePaths(graph);
         Graph subgraph = generateSubgraph(graph, paths);
-        String subgraphPath = String.format("./subgraphs/labyrinth_%c.txt", n);
-        Utils.writeToFile(subgraphPath, Utils.serializeMatrix(subgraph.adjacencyMatrix, false));
-        System.out.println(subgraph);
+        Integer[] path = TSP.greedy(subgraph);
+        Search.printPath(path);
     }
 
     static Graph generateSubgraph(Graph graph, Integer[][] paths) {
         // TODO: better calculate matrix dimensions, this is not optimal
-        int[][] adjacencyMatrix = new int[graph.adjacencyMatrix.length][graph.adjacencyMatrix[0].length];
+        int[][] adjacencyMatrix = new int[graph.matrix.length][graph.matrix[0].length];
         for (Integer[] path : paths) {
             int start = path[0];
             int end = path[path.length - 1];
@@ -67,7 +65,7 @@ public class Main {
             adjacencyMatrix[start][end] = cost;
             adjacencyMatrix[end][start] = cost;
         }
-        return new Graph(graph.start, graph.end, adjacencyMatrix, graph.mustVisit);
+        return new Graph(graph.start, graph.end, adjacencyMatrix, graph.mustVisit, graph.mustVisit.length + 2);
     }
 
     static Integer[][] computePossiblePaths(Graph graph) {
@@ -79,7 +77,7 @@ public class Main {
         List<Integer[]> paths = new ArrayList<>();
         for (int i = 0; i < interestedNodes.length; i++) {
             for (int j = i + 1; j < interestedNodes.length; j++) {
-                paths.add(Search.search(graph.adjacencyMatrix, interestedNodes[i], interestedNodes[j]));
+                paths.add(Search.search(graph.matrix, interestedNodes[i], interestedNodes[j]));
             }
         }
         return paths.toArray(new Integer[0][0]);

@@ -143,7 +143,7 @@ public class Utils {
                 nodeIndex++;
             }
         }
-        return new Graph(startNodeIndex, endNodeIndex, graph, treasures.toArray(new Integer[0]));
+        return new Graph(startNodeIndex, endNodeIndex, graph, treasures.toArray(new Integer[0]), graph.length);
     }
 
     static Pair<Integer, Integer[][]> labyrinthToNodeIndexMap(Integer[][] labyrinth) {
@@ -173,6 +173,7 @@ public class Utils {
         if (destIndex == - 1) {
             return;
         }
+        graph[srcIndex][srcIndex] = Integer.MAX_VALUE;
         // end, start or treasure nodes have no cost
         if (isZeroCostNode(srcNode) && isZeroCostNode(destNode)) {
             graph[srcIndex][destIndex] = 1;

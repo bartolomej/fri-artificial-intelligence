@@ -65,6 +65,6 @@ public class Search {
                 {-1, -1, -1, -1, -1}
         };
         Graph graph = Utils.labyrinthToGraph(labyrinth);
-        Integer[] path = Search.search(graph.adjacencyMatrix, graph.start, graph.end);
+        Integer[] path = Search.search(graph.matrix, graph.start, graph.end);
     }
 }
