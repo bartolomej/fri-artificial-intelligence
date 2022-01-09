@@ -16,7 +16,7 @@ public class Main {
         for (String n : list) {
             char cn = n.charAt(0);
             if (cn >= '1' && cn <= '9') {
-                solve(cn);
+                solveSingle(cn);
             } else if (cn == '*') {
                 solveAll();
             }
@@ -25,15 +25,27 @@ public class Main {
 
     static void solveAll() throws Exception {
         for (char n : allN) {
-            solve(n);
+            solveSingle(n);
         }
     }
 
-    static void solve(char n) throws Exception {
+    static void solveSingle(char n) throws Exception {
+        System.out.print("\n\n-------------- DATASET " + n  + " ----------------\n\n");
+        String[] searchAlgorithms = new String[]{
+                "dfs",
+                "bfs"
+        };
+        for (String algo : searchAlgorithms) {
+            System.out.println("ALGORITHM: " + algo);
+            solve(n, algo);
+        }
+    }
+
+    static void solve(char n, String searchAlgorithm) throws Exception {
         String filePath = String.format("./data/labyrinth_%c.txt", n);
         Integer[][] labyrinth = Utils.readLabyrinthFile(filePath);
         Graph graph = Utils.labyrinthToGraph(labyrinth);
-        Integer[][] paths = computePossiblePaths(graph);
+        Integer[][] paths = computePossiblePaths(graph, searchAlgorithm);
         // probably not the nicest solution, consider refactoring :)
         Pair<Graph, Map<String, Integer[]>> subgraphTuple = generateSubgraph(graph, paths);
         Graph subgraph = subgraphTuple.getValue0();
@@ -95,7 +107,7 @@ public class Main {
         return new Pair<>(subgraph, pathMap);
     }
 
-    static Integer[][] computePossiblePaths(Graph graph) {
+    static Integer[][] computePossiblePaths(Graph graph, String searchAlgorithm) {
         // create a list of interested nodes {start, end, ...treasures}
         Integer[] interestedNodes = new Integer[2 + graph.mustVisit.length];
         interestedNodes[0] = graph.start;
@@ -104,7 +116,12 @@ public class Main {
         List<Integer[]> paths = new ArrayList<>();
         for (int i = 0; i < interestedNodes.length; i++) {
             for (int j = i + 1; j < interestedNodes.length; j++) {
-                paths.add(Search.search(graph.matrix, interestedNodes[i], interestedNodes[j]));
+                if (searchAlgorithm.equals("bfs")) {
+                    paths.add(Search.bfs(graph.matrix, interestedNodes[i], interestedNodes[j]));
+                }
+                else {
+                    paths.add(Search.dfs(graph.matrix, interestedNodes[i], interestedNodes[j]));
+                }
             }
         }
         return paths.toArray(new Integer[0][0]);
