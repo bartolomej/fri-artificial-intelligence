@@ -27,12 +27,16 @@ public class Utils {
         return s.toString();
     }
 
-    static String serializeMatrix(int[][] matrix) {
+    static String serializeMatrix(int[][] matrix, boolean inline) {
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < matrix.length; i++) {
             for (int j = 0; j < matrix[0].length; j++) {
                 s.append(matrix[i][j]);
                 s.append(",");
+            }
+            if (!inline && i < matrix.length - 1) {
+                s.delete(s.length() - 1, s.length()); // remove last ","
+                s.append("\n");
             }
         }
         // remove last ","

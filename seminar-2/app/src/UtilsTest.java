@@ -36,6 +36,6 @@ class UtilsTest {
         assertEquals(0, graph.start);
         assertEquals(7, graph.end);
         assertEquals(16, graph.getTotalEdges());
-        assertArrayEquals(new Integer[]{2,6}, graph.treasures);
+        assertArrayEquals(new Integer[]{2,6}, graph.mustVisit);
     }
 }

@@ -11,9 +11,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         // TODO: remove mock
-        args = new String[]{"1"};
-
-//        storeMetadata();
+        args = new String[]{"*"};
 
         if (args.length != 1) {
             throw new Exception("Invalid arguments");
@@ -42,28 +40,42 @@ public class Main {
         }
     }
 
-    static void solveAll() throws FileNotFoundException {
+    static void solveAll() throws Exception {
         for (char n : allN) {
             solve(n);
         }
     }
 
-    static void solve(char n) throws FileNotFoundException {
+    static void solve(char n) throws Exception {
         String filePath = String.format("./data/labyrinth_%c.txt", n);
         Integer[][] labyrinth = Utils.readLabyrinthFile(filePath);
         Graph graph = Utils.labyrinthToGraph(labyrinth);
         Integer[][] paths = computePossiblePaths(graph);
+        Graph subgraph = generateSubgraph(graph, paths);
+        String subgraphPath = String.format("./subgraphs/labyrinth_%c.txt", n);
+        Utils.writeToFile(subgraphPath, Utils.serializeMatrix(subgraph.adjacencyMatrix, false));
+        System.out.println(subgraph);
+    }
+
+    static Graph generateSubgraph(Graph graph, Integer[][] paths) {
+        // TODO: better calculate matrix dimensions, this is not optimal
+        int[][] adjacencyMatrix = new int[graph.adjacencyMatrix.length][graph.adjacencyMatrix[0].length];
         for (Integer[] path : paths) {
-            Search.printPath(path);
+            int start = path[0];
+            int end = path[path.length - 1];
+            int cost = graph.getPathCost(path);
+            adjacencyMatrix[start][end] = cost;
+            adjacencyMatrix[end][start] = cost;
         }
+        return new Graph(graph.start, graph.end, adjacencyMatrix, graph.mustVisit);
     }
 
     static Integer[][] computePossiblePaths(Graph graph) {
         // create a list of interested nodes {start, end, ...treasures}
-        Integer[] interestedNodes = new Integer[2 + graph.treasures.length];
+        Integer[] interestedNodes = new Integer[2 + graph.mustVisit.length];
         interestedNodes[0] = graph.start;
         interestedNodes[1] = graph.end;
-        System.arraycopy(graph.treasures, 0, interestedNodes, 2, graph.treasures.length);
+        System.arraycopy(graph.mustVisit, 0, interestedNodes, 2, graph.mustVisit.length);
         List<Integer[]> paths = new ArrayList<>();
         for (int i = 0; i < interestedNodes.length; i++) {
             for (int j = i + 1; j < interestedNodes.length; j++) {
