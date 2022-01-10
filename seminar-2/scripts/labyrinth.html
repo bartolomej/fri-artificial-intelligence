@@ -228,6 +228,9 @@
 
         React.useEffect(() => {
             setLoading(true);
+            if (![1,2,3,5,6,7].includes(n)) {
+                setShowNodeIndex(false);
+            }
             fetchData(n, searchMethod).then(({labyrinth, graph, indexMap, paths}) => {
                 setLabyrinth(labyrinth);
                 setGraph(graph);
