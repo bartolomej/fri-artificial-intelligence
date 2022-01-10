@@ -15,20 +15,26 @@
         margin: 0;
     }
 
-    html, body, #root, table, tbody {
+    html, body, #root {
         height: 100%;
         width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
     }
 
     table {
         border-collapse: collapse;
+        width: 1000px;
+        height: 1000px;
     }
 
     td {
         text-align: center;
         border: 0;
         color: black;
-        font-size: 20px;
+        font-size: 70%;
         font-family: Monaco, serif;
         position: relative;
     }
@@ -58,7 +64,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 10px;
+        font-size: 50%;
         margin: 2px;
     }
 
@@ -113,6 +119,9 @@
     }
     .controls > * {
         margin-right: 20px;
+    }
+    .controls label span {
+           margin-right: 5px;
     }
 </style>
 <script type="text/babel">
@@ -230,10 +239,6 @@
             })
         }, [n]);
 
-        if (loading) {
-            return "Loading ..."
-        }
-
         let nodeIndex = -1;
         const w = (i1, j1, i2, j2) => {
             const i = indexMap[i1][j1];
@@ -248,49 +253,9 @@
 
         return (
             <>
-                <table>
-                    <tbody>
-                    {path && indexMap && graph && labyrinth && labyrinth.map((row, i) => (
-                        <tr key={i}>
-                            {row.map((node, j) => {
-                                if (node !== -1) {
-                                    nodeIndex++;
-                                    const lw = w(i, j, i, j - 1);
-                                    const tw = w(i, j, i - 1, j);
-                                    const rw = w(i, j, i, j + 1);
-                                    const bw = w(i, j, i + 1, j);
-                                    const isInPath = !!path.find(e => e === nodeIndex)
-                                    return (
-                                        <td className={valueToNodeType(node)} key={j}>
-                                            <div className="wrapper">
-                                                {isInPath ? (
-                                                    <span className="path">{showNodeIndex ? nodeIndex : ''}</span>
-                                                ) : (
-                                                    <>{showNodeIndex ? nodeIndex : ''}</>
-                                                )}
-                                            </div>
-                                            {showEdgeWeights && (
-                                                <>
-                                                    <span className="left">{lw}</span>
-                                                    <span className="top">{tw}</span>
-                                                    <span className="right">{rw}</span>
-                                                    <span className="bottom">{bw}</span>
-                                                </>
-                                            )}
-                                        </td>
-                                    );
-                                } else {
-                                    return <td className={valueToNodeType(node)} key={j}>--</td>
-                                }
-                            })}
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-
                 <div className="controls">
                     <label>
-                        Labyrinth:
+                        <span>Labyrinth</span>
                         <select value={n} onChange={e => setN(+e.target.value)}>
                             {Array.from({length: 9}).map((e, i) => (
                                 <option value={i + 1} key={i}>{i + 1}</option>
@@ -299,7 +264,7 @@
                     </label>
 
                     <label>
-                        TSP method:
+                        <span>TSP method</span>
                         <select value={tspMethod} onChange={e => setTspMethod(e.target.value)}>
                             <option value="greedy">Greedy</option>
                             <option value="local">Local optimisation</option>
@@ -307,7 +272,7 @@
                     </label>
 
                     <label>
-                        Search method:
+                        <span>Search method</span>
                         <select value={searchMethod} onChange={e => setSearchMethod(e.target.value)}>
                             <option value="bfs">Breath first</option>
                             <option value="dfs">Depth first</option>
@@ -315,15 +280,56 @@
                     </label>
 
                     <label>
-                        Show edge weights:
-                        <input type="checkbox" value={showEdgeWeights} onChange={e => setShowEdgeWeights(!showEdgeWeights)} />
+                        <span>Show edge weights</span>
+                        <input type="checkbox" checked={showEdgeWeights} onChange={e => setShowEdgeWeights(!showEdgeWeights)} />
                     </label>
 
                     <label>
-                        Show node index:
-                        <input type="checkbox" value={showNodeIndex} onChange={e => setShowNodeIndex(!showNodeIndex)} />
+                        <span>Show node index</span>
+                        <input type="checkbox" checked={showNodeIndex} onChange={e => setShowNodeIndex(!showNodeIndex)} />
                     </label>
                 </div>
+                {loading ? "Loading ..." : (
+                    <table>
+                        <tbody>
+                        {labyrinth.map((row, i) => (
+                            <tr key={i}>
+                                {row.map((node, j) => {
+                                    if (node !== -1) {
+                                        nodeIndex++;
+                                        const lw = w(i, j, i, j - 1);
+                                        const tw = w(i, j, i - 1, j);
+                                        const rw = w(i, j, i, j + 1);
+                                        const bw = w(i, j, i + 1, j);
+                                        const isInPath = !!path.find(e => e === nodeIndex)
+                                        return (
+                                            <td className={valueToNodeType(node)} key={j}>
+                                                <div className="wrapper">
+                                                    {isInPath ? (
+                                                        <span className="path">{showNodeIndex ? nodeIndex : ''}</span>
+                                                    ) : (
+                                                        <>{showNodeIndex ? nodeIndex : ''}</>
+                                                    )}
+                                                </div>
+                                                {showEdgeWeights && (
+                                                    <>
+                                                        <span className="left">{lw}</span>
+                                                        <span className="top">{tw}</span>
+                                                        <span className="right">{rw}</span>
+                                                        <span className="bottom">{bw}</span>
+                                                    </>
+                                                )}
+                                            </td>
+                                        );
+                                    } else {
+                                        return <td className={valueToNodeType(node)} key={j}>--</td>
+                                    }
+                                })}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                )}
             </>
         )
     }
